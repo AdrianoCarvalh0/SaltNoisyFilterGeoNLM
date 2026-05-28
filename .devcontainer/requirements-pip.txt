@@ -1,0 +1,4 @@
+
+opencv-python-headless==4.11.0.86
+svgwrite==1.4.3
+openpyxl>=3.1

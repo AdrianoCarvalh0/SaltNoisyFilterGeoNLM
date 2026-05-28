@@ -1,0 +1,26 @@
+{
+  "name": "SaltExperiments (frozen, root)",
+  "build": { "dockerfile": "Dockerfile" },
+  "runArgs": [
+    "--gpus=all",
+    "--shm-size=4g"
+  ],
+  "workspaceFolder": "/workspace",
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/workspace,type=bind"
+  ],
+  "remoteUser": "root",
+  "settings": {
+    "python.defaultInterpreterPath": "/opt/conda/envs/salt/bin/python",
+    "jupyter.jupyterServerType": "local",
+    "terminal.integrated.defaultProfile.linux": "bash"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-toolsai.jupyter"
+      ]
+    }
+  }
+}
