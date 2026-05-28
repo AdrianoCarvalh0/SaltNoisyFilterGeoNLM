@@ -3,7 +3,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.append(str(PROJECT_ROOT))
 
-from gaussian_experiments.set12.ablation.Gaussian_low import generate_gaussian_experiment_low
+from salt_experiments.set12.ablation.Gaussian_low import generate_gaussian_experiment_low
 from Utils import ensure_output_dirs
 
 if __name__ == '__main__':

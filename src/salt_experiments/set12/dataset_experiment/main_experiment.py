@@ -4,7 +4,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.append(str(PROJECT_ROOT))
 
-from Gaussian_experiment import generate_gaussian_experiment
+from Salt_experiment import generate_salt_experiment
 
 
 from functions.Utils import ensure_output_dirs
@@ -50,5 +50,5 @@ if __name__ == '__main__':
         'nn': 10,      # Number of nearest neighbors
     }
 
-    # Execute the low-noise Gaussian experiment
-    generate_gaussian_experiment(parameters)
+    # Execute the low-noise salt experiment
+    generate_salt_experiment(parameters)

@@ -10,7 +10,7 @@ from skimage.restoration import estimate_sigma
 import numpy as np
 import skimage
 from functions.Utils import (read_directories, save_pickle, save_results_to_xlsx, load_pickle, is_low_noise_or, get_multiplier)
-from functions.noisy_functions import (add_low_noise_gaussian, add_moderate_noise_gaussian, add_high_noise_gaussian)
+from functions.noisy_functions import (add_low_noise_salt, add_moderate_noise_salt, add_high_noise_salt)
 from functions.nlm_functions import (compute_adaptive_q, select_best_h_using_adaptive_q)
 from functions.geonlm_functions import run_geonlm_pipeline
 import time
@@ -47,13 +47,13 @@ def resize_image(img, target_size):
 
 
 
-def generate_gaussian_experiment(parameters):
+def generate_salt_experiment(parameters):
     """
-    Run the low-noise Gaussian denoising experiment using NLM, GEO-NLM, and BM3D.
+    Run the low-noise salt denoising experiment using NLM, GEO-NLM, and BM3D.
     
     The function:
       1. Reads all images in dir_images_general.
-      2. Adds low-level Gaussian noise.
+      2. Adds low-level salt noise.
       3. Estimates sigma and computes an adaptive NLM parameter h.
       4. Runs NLM and stores intermediate results in a pickle file.
       5. Reloads those results to run GEO-NLM and BM3D.
