@@ -323,6 +323,9 @@ def select_best_h_using_adaptive_q(image, image_gpu, q_nlm_candidates, f, t, alp
     best_ssim = None
 
     for h_nlm in q_nlm_candidates:
+        if not np.isfinite(h_nlm) or h_nlm <= 0:
+            continue
+
         # Run GPU NLM for this candidate and synchronize
         result_gpu = NLM_fast_cuda_global(image_gpu, h_nlm, f, t)
         cp.cuda.Stream.null.synchronize()
@@ -332,6 +335,12 @@ def select_best_h_using_adaptive_q(image, image_gpu, q_nlm_candidates, f, t, alp
 
         # Move result back to CPU and quantize to uint8 for metrics
         result_processed = cp.asnumpy(result_gpu)
+        result_processed = np.nan_to_num(
+            result_processed,
+            nan=0.0,
+            posinf=255.0,
+            neginf=0.0
+        )
         result_uint8 = np.clip(result_processed, 0, 255).astype(np.uint8)
 
         # Quality metrics
@@ -349,5 +358,8 @@ def select_best_h_using_adaptive_q(image, image_gpu, q_nlm_candidates, f, t, alp
             best_result = result_processed
             best_psnr = psnr
             best_ssim = ssim
+    if best_result is None:
+        raise ValueError("No valid positive h candidates were provided for NLM.")
+
     print(f"\n[SELECTED] H = {best_q_nlm:.2f} | PSNR = {best_psnr:.2f} | SSIM = {best_ssim:.4f} | SCORE = {best_score:.2f}")
     return best_result, best_q_nlm, best_psnr, best_ssim, best_score

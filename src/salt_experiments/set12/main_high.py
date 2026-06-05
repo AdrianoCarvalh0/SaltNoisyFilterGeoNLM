@@ -1,48 +1,71 @@
 import sys
 from pathlib import Path
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.append(str(PROJECT_ROOT))
 
-from Gaussian_high import generate_gaussian_experiment_high
-from functions.Utils import ensure_output_dirs
+from Salt_high import generate_salt_experiment_high
+
 
 if __name__ == '__main__':
 
-    # Base output directory for the high-noise experiment results
-    root_dir_output_high = Path('/workspace/data/output/set12/high_noisy/test')
+    # Base output directory for the high salt-and-pepper noise experiment results
+    root_dir_output_high = Path('/workspace/data/output/set12/salt_pepper_high/full_512')
 
     # Directory containing the input images used in the experiment
-    dir_images_general = Path('/workspace/data/input/general_images')
+    dir_images_general = Path('/workspace/data/input/set12')
 
     # Ensure required output directories exist
-    ensure_output_dirs(root_dir_output_high)
+    for subdir in ['NLM', 'GEONLM', 'MEDIAN', 'ASWMF', 'results']:
+        (root_dir_output_high / subdir).mkdir(parents=True, exist_ok=True)
 
     # Dictionary of parameters passed to the experiment generator
     parameters = {
 
-        # Paths for reading input and saving results
+        # Paths for reading input images and saving results
         'root_dir_output_high': str(root_dir_output_high),
-        'dir_images_general': str(dir_images_general),
+        'dir_images_set12': str(dir_images_general),
 
         # Output folders for each filtering method
         'dir_out_nlm': str(root_dir_output_high / 'NLM'),
         'dir_out_geonlm': str(root_dir_output_high / 'GEONLM'),
-        'dir_out_bm3d': str(root_dir_output_high / 'BM3D'),
+        'dir_out_median': str(root_dir_output_high / 'MEDIAN'),
+        'dir_out_aswmf': str(root_dir_output_high / 'ASWMF'),
         'dir_out_results': str(root_dir_output_high / 'results'),
 
-        # Filenames for serialized results (pickle/XLSX)
-        'name_pickle_nlm_output_high': 'array_nln_high_filtereds.pkl',
-        'name_pickle_results_gnlm_bm3d_output_high':
-            'results_gaussian_gnlm_bm3d_high.pkl',
-        'name_results_xlsx_nlm_gnlm_bm3d_output_high':
-            'gnlm_bm3d_high_filtereds.xlsx',
+        # Filenames for serialized results
+        'name_pickle_nlm_output_high': 'array_nlm_salt_pepper_high_filtereds.pkl',
+        'name_pickle_results_gnlm_median_aswmf_output_high':
+            'results_salt_pepper_gnlm_median_aswmf_high.pkl',
+        'name_results_xlsx_nlm_gnlm_median_aswmf_output_high':
+            'gnlm_median_aswmf_salt_pepper_high_filtereds.xlsx',
+
+        # Salt-and-pepper noise parameter
+        # 0.10 means 10% total corrupted pixels:
+        # 5% salt + 5% pepper
+        'salt_pepper_density': 0.10,
+
+        # Median filter baseline for salt-and-pepper noise.
+        # Use 3x3 for high-density impulse noise to avoid unnecessary smoothing.
+        'median_size': 3,
+
+        # ASWMF parameters from Thanh et al. (2020): 7x7 window and weights 1,1,10.
+        'aswmf_radius': 3,
+        'aswmf_weight_diag_1': 1.0,
+        'aswmf_weight_diag_2': 1.0,
+        'aswmf_weight_other': 10.0,
+
+        # Full-size run: keep the original Set12 image size.
+        'resize_shape': None,
+        'print_metrics': True,
+        'verbose_internal': True,
 
         # Algorithmic parameters used internally by the experiment
         'f': 4,        # Patch radius
         't': 7,        # Search window radius
-        'alpha': 0.5,  # Geometric weight (for GEO-NLM)
+        'alpha': 0.5,  # Geometric weight for GEO-NLM
         'nn': 10,      # Number of nearest neighbors
     }
 
-    # Execute the high-noise Gaussian experiment
-    generate_gaussian_experiment_high(parameters)
+    # Execute the high salt-and-pepper noise experiment
+    generate_salt_experiment_high(parameters)

@@ -25,14 +25,23 @@ def save_results_to_xlsx(records, output_dir, filename='results.xlsx'):
         if isinstance(x, np.bool_):    return bool(x)
         return x
 
-    df = df.applymap(to_builtin)
+    df = df.map(to_builtin)
 
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     file_path = output_dir / filename
-    df.to_excel(file_path, index=False)
-    print(f"File saved to: {file_path}")
-    return file_path
+    try:
+        df.to_excel(file_path, index=False)
+        print(f"File saved to: {file_path}")
+        return file_path
+    except ModuleNotFoundError as exc:
+        if exc.name != 'openpyxl':
+            raise
+
+        csv_path = file_path.with_suffix('.csv')
+        df.to_csv(csv_path, index=False)
+        print(f"openpyxl not available. CSV file saved to: {csv_path}")
+        return csv_path
 
 def save_pickle(obj: Any, output_dir: PathLike, filename: str = "object.pkl") -> Path:
     """
