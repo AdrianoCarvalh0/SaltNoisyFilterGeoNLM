@@ -67,6 +67,10 @@ def force_run():
     return os.environ.get("SET12_HIBRID_FORCE", "0") == "1"
 
 
+def force_hybrid_run():
+    return force_run() or os.environ.get("SET12_HIBRID_FORCE_HYBRID", "0") == "1"
+
+
 def score(psnr, ssim):
     return 0.5 * psnr + 0.5 * (ssim * 100)
 
@@ -139,7 +143,7 @@ def read_or_run_median(item, out_path):
 
 def read_or_run_hybrid(item, out_path):
     reference = item["img_reference_np"]
-    if out_path.exists() and not force_run():
+    if out_path.exists() and not force_hybrid_run():
         image = skimage.io.imread(str(out_path))
         psnr, ssim, method_score = metrics(reference, image)
         return image, psnr, ssim, method_score, np.nan, (
