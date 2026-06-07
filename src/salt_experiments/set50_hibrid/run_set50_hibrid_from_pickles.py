@@ -28,10 +28,10 @@ LEVELS = ["low", "medium", "moderate", "high", "extreme"]
 RESOLUTION = "full_512"
 
 HYBRID_CONFIG = {
-    "f": 2,
+    "f": 1,
     "t": 3,
     "nn": 7,
-    "h_multiplier": 0.005,
+    "h_multiplier": 0.001,
     "switch_impulse_only": True,
     "reject_impulse_candidates": True,
     "use_aswmf_spatial_weights": True,
