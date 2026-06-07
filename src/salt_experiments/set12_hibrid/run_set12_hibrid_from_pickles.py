@@ -10,6 +10,10 @@ sys.path.append(str(PROJECT_ROOT / "set12"))
 import numpy as np
 import pandas as pd
 import skimage.io
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Font, PatternFill
 from scipy.ndimage import median_filter
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 
@@ -24,10 +28,10 @@ LEVELS = ["low", "medium", "moderate", "high", "extreme"]
 RESOLUTION = "full_512"
 
 HYBRID_CONFIG = {
-    "f": 2,
+    "f": 1,
     "t": 3,
     "nn": 7,
-    "h_multiplier": 0.005,
+    "h_multiplier": 0.001,
     "switch_impulse_only": True,
     "reject_impulse_candidates": True,
     "use_aswmf_spatial_weights": True,
@@ -284,6 +288,184 @@ def run_level(level):
     return records
 
 
+def make_summary(all_records, summary_dir):
+    df = pd.DataFrame(all_records)
+    summary = (
+        df.groupby("level")
+        .agg(
+            mean_ssim_nlm=("ssim_nlm", "mean"),
+            mean_ssim_geonlm_hibrid=("ssim_geonlm_hibrid", "mean"),
+            mean_ssim_median=("ssim_median", "mean"),
+            mean_ssim_aswmf=("ssim_aswmf_original", "mean"),
+            mean_ssim_nlmedians=("ssim_nlmedians", "mean"),
+            mean_psnr_nlm=("psnr_nlm", "mean"),
+            mean_psnr_geonlm_hibrid=("psnr_geonlm_hibrid", "mean"),
+            mean_psnr_median=("psnr_median", "mean"),
+            mean_psnr_aswmf=("psnr_aswmf_original", "mean"),
+            mean_psnr_nlmedians=("psnr_nlmedians", "mean"),
+            mean_score_nlm=("score_nlm", "mean"),
+            mean_score_geonlm_hibrid=("score_geonlm_hibrid", "mean"),
+            mean_score_median=("score_median", "mean"),
+            mean_score_aswmf=("score_aswmf_original", "mean"),
+            mean_score_nlmedians=("score_nlmedians", "mean"),
+            mean_time_geonlm_hibrid=("time_geonlm_hibrid", "mean"),
+            mean_time_median=("time_median", "mean"),
+            mean_time_nlmedians=("time_nlmedians", "mean"),
+            wins_hibrid_vs_nlm=("delta_score_hibrid_vs_nlm", lambda s: int((s > 0).sum())),
+            wins_hibrid_vs_nlmedians=("delta_score_hibrid_vs_nlmedians", lambda s: int((s > 0).sum())),
+        )
+        .reset_index()
+    )
+    summary.to_excel(summary_dir / "results_set12_hibrid_summary.xlsx", index=False)
+    return summary
+
+
+def better(value, reference):
+    if pd.isna(value) or pd.isna(reference):
+        return ""
+    return "melhor" if value > reference else "pior"
+
+
+def create_method_format_xlsx(all_records, out_path):
+    wb = Workbook()
+    wb.remove(wb.active)
+    header = [
+        "",
+        "s1 - NLM", "s2 - GEOHIB", "s3 - Median", "s4 - ASWMF", "s5 - NLMedian",
+        "GLM x NLM", "GLM x Median", "GNLM x ASWMF", "GNLM x NlMedian",
+        "p1 - NLM", "p2 - GEOHIB", "p3 - Median", "p4 - ASWMF", "p5 - NLMedian",
+        "GLM x NLM", "GLM x Median", "GNLM x ASWMF", "GNLM x NlMedian",
+        "time_geonlm",
+        "nlm_score", "score_gnlm_hib", "score_median", "score_aswmf", "score_nlmedian",
+        "GLM x NLM", "GLM x Median", "GNLM x ASWMF", "GNLM x NlMedian",
+        "nlm_h", "h_gnlm", "estimated_sigma", "image",
+    ]
+    for level in LEVELS:
+        rows = [row for row in all_records if row["level"] == level]
+        if not rows:
+            continue
+        ws = wb.create_sheet(f"Hibrid Set12 {level.title()}")
+        ws.append(header)
+        for record in rows:
+            ws.append([
+                None,
+                record["ssim_nlm"],
+                record["ssim_geonlm_hibrid"],
+                record["ssim_median"],
+                record["ssim_aswmf_original"],
+                record["ssim_nlmedians"],
+                better(record["ssim_geonlm_hibrid"], record["ssim_nlm"]),
+                better(record["ssim_geonlm_hibrid"], record["ssim_median"]),
+                better(record["ssim_geonlm_hibrid"], record["ssim_aswmf_original"]),
+                better(record["ssim_geonlm_hibrid"], record["ssim_nlmedians"]),
+                record["psnr_nlm"],
+                record["psnr_geonlm_hibrid"],
+                record["psnr_median"],
+                record["psnr_aswmf_original"],
+                record["psnr_nlmedians"],
+                better(record["psnr_geonlm_hibrid"], record["psnr_nlm"]),
+                better(record["psnr_geonlm_hibrid"], record["psnr_median"]),
+                better(record["psnr_geonlm_hibrid"], record["psnr_aswmf_original"]),
+                better(record["psnr_geonlm_hibrid"], record["psnr_nlmedians"]),
+                record["time_geonlm_hibrid"],
+                record["score_nlm"],
+                record["score_geonlm_hibrid"],
+                record["score_median"],
+                record["score_aswmf_original"],
+                record["score_nlmedians"],
+                better(record["score_geonlm_hibrid"], record["score_nlm"]),
+                better(record["score_geonlm_hibrid"], record["score_median"]),
+                better(record["score_geonlm_hibrid"], record["score_aswmf_original"]),
+                better(record["score_geonlm_hibrid"], record["score_nlmedians"]),
+                record["nlm_h"],
+                record["hybrid_h"],
+                record["estimated_sigma_salt_pepper"],
+                record["file_name"],
+            ])
+        style_sheet(ws)
+    wb.save(out_path)
+    return out_path
+
+
+def style_sheet(ws):
+    header_fill = PatternFill("solid", fgColor="D9EAF7")
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="center")
+    for row in ws.iter_rows():
+        for cell in row:
+            cell.alignment = Alignment(horizontal="center")
+            if isinstance(cell.value, float):
+                cell.number_format = "0.0000"
+    for col in range(1, ws.max_column + 1):
+        ws.column_dimensions[ws.cell(1, col).column_letter].width = 13
+    ws.freeze_panes = "A2"
+
+
+def add_table_page(pdf, title, df, columns):
+    fig, ax = plt.subplots(figsize=(11.69, 8.27))
+    ax.axis("off")
+    ax.set_title(title, fontsize=14, fontweight="bold", pad=16)
+    table_df = df[columns].copy()
+    for col in table_df.columns:
+        if col != "level":
+            table_df[col] = table_df[col].map(lambda x: "" if pd.isna(x) else f"{x:.4f}")
+    table = ax.table(
+        cellText=table_df.values,
+        colLabels=table_df.columns,
+        loc="center",
+        cellLoc="center",
+    )
+    table.auto_set_font_size(False)
+    table.set_fontsize(8)
+    table.scale(1, 1.35)
+    pdf.savefig(fig, bbox_inches="tight")
+    plt.close(fig)
+
+
+def create_pdfs(summary, out_old, out_new):
+    old_cols = [
+        "level",
+        "mean_score_nlm",
+        "mean_score_geonlm_hibrid",
+        "mean_score_median",
+        "mean_score_aswmf",
+        "mean_score_nlmedians",
+    ]
+    with PdfPages(out_old) as pdf:
+        add_table_page(pdf, "Set12 Hibrid - Summary Score", summary, old_cols)
+
+    new_cols_score = [
+        "level",
+        "mean_score_nlm",
+        "mean_score_geonlm_hibrid",
+        "mean_score_median",
+        "mean_score_aswmf",
+        "mean_score_nlmedians",
+    ]
+    new_cols_psnr = [
+        "level",
+        "mean_psnr_nlm",
+        "mean_psnr_geonlm_hibrid",
+        "mean_psnr_median",
+        "mean_psnr_aswmf",
+        "mean_psnr_nlmedians",
+    ]
+    new_cols_ssim = [
+        "level",
+        "mean_ssim_nlm",
+        "mean_ssim_geonlm_hibrid",
+        "mean_ssim_median",
+        "mean_ssim_aswmf",
+        "mean_ssim_nlmedians",
+    ]
+    with PdfPages(out_new) as pdf:
+        add_table_page(pdf, "Set12 Hibrid - Score Format", summary, new_cols_score)
+        add_table_page(pdf, "Set12 Hibrid - PSNR Format", summary, new_cols_psnr)
+        add_table_page(pdf, "Set12 Hibrid - SSIM Format", summary, new_cols_ssim)
+
+
 if __name__ == "__main__":
     all_records = []
     for level in selected_levels():
@@ -294,28 +476,15 @@ if __name__ == "__main__":
     save_pickle(all_records, summary_dir, "results_set12_hibrid_all.pkl")
     save_results_to_xlsx(all_records, summary_dir, "results_set12_hibrid_all.xlsx")
 
-    df = pd.DataFrame(all_records)
-    summary = (
-        df.groupby("level")
-        .agg(
-            mean_score_nlm=("score_nlm", "mean"),
-            mean_score_median=("score_median", "mean"),
-            mean_score_nlmedians=("score_nlmedians", "mean"),
-            mean_score_geonlm_hibrid=("score_geonlm_hibrid", "mean"),
-            mean_score_gnlm_original=("score_gnlm_original", "mean"),
-            mean_score_median_original=("score_median_original", "mean"),
-            mean_score_aswmf_original=("score_aswmf_original", "mean"),
-            mean_delta_hibrid_vs_nlm=("delta_score_hibrid_vs_nlm", "mean"),
-            mean_delta_hibrid_vs_nlmedians=("delta_score_hibrid_vs_nlmedians", "mean"),
-            wins_hibrid_vs_nlmedians=(
-                "delta_score_hibrid_vs_nlmedians",
-                lambda s: int((s > 0).sum()),
-            ),
-            mean_time_median=("time_median", "mean"),
-            mean_time_nlmedians=("time_nlmedians", "mean"),
-            mean_time_geonlm_hibrid=("time_geonlm_hibrid", "mean"),
-        )
-        .reset_index()
+    summary = make_summary(all_records, summary_dir)
+    method_xlsx = create_method_format_xlsx(
+        all_records,
+        summary_dir / "Results Salt and Pepper Hibrid Method - Set12.xlsx",
     )
-    summary.to_excel(summary_dir / "results_set12_hibrid_summary.xlsx", index=False)
+    create_pdfs(
+        summary,
+        summary_dir / "results_set12_hibrid_summary_old_format.pdf",
+        summary_dir / "results_set12_hibrid_method_format.pdf",
+    )
     print(summary.to_string(index=False))
+    print(f"Method-format XLSX saved to: {method_xlsx}")

@@ -71,16 +71,37 @@ def force_run():
     return os.environ.get("SET50_HIBRID_FORCE", "0") == "1"
 
 
+def force_hybrid_run():
+    return force_run() or os.environ.get("SET50_HIBRID_FORCE_HYBRID", "0") == "1"
+
+
 def score(psnr, ssim):
     return 0.5 * psnr + 0.5 * (ssim * 100)
 
 
 def metrics(reference, image):
     reference_uint8 = np.clip(reference, 0, 255).astype(np.uint8)
-    image_uint8 = np.clip(image, 0, 255).astype(np.uint8)
+    image_uint8 = to_grayscale_uint8(image)
     psnr = peak_signal_noise_ratio(reference_uint8, image_uint8, data_range=255)
     ssim = structural_similarity(reference_uint8, image_uint8, data_range=255)
     return psnr, ssim, score(psnr, ssim)
+
+
+def to_grayscale_uint8(image):
+    image = np.asarray(image)
+    if image.ndim == 4:
+        image = image[0]
+    if image.ndim == 3 and image.shape[-1] == 4:
+        image = image[..., :3]
+    if image.ndim == 3 and image.shape[-1] == 3:
+        image = (
+            0.2125 * image[..., 0]
+            + 0.7154 * image[..., 1]
+            + 0.0721 * image[..., 2]
+        )
+    if image.ndim == 3 and image.shape[0] == 1:
+        image = image[0]
+    return np.clip(image, 0, 255).astype(np.uint8)
 
 
 def ensure_dirs(root):
@@ -143,7 +164,7 @@ def read_or_run_median(item, out_path):
 
 def read_or_run_hybrid(item, out_path):
     reference = item["img_reference_np"]
-    if out_path.exists() and not force_run():
+    if out_path.exists() and not force_hybrid_run():
         image = skimage.io.imread(str(out_path))
         psnr, ssim, method_score = metrics(reference, image)
         return image, psnr, ssim, method_score, np.nan, (
