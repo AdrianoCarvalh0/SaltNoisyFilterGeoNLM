@@ -1,0 +1,347 @@
+\documentclass{ieeeaccess}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{booktabs}
+\usepackage{bm}
+\usepackage[utf8]{inputenc}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\history{Date of publication xxxx 00, 0000, date of current version xxxx 00, 0000.}
+\doi{10.1109/ACCESS.2026.XXXXXXX}
+
+\title{GEONLMHibrid: A Switching Geodesic Non-Local Median Method for Salt-and-Pepper Image Denoising}
+
+\author{\uppercase{Adriano dos Reis Carvalho}\authorrefmark{1},
+\uppercase{Alexandre L. M. Levada}\authorrefmark{1}}
+
+\address[1]{Computing Department, Federal University of S\~ao Carlos, S\~ao Carlos, SP, Brazil}
+
+\tfootnote{This work was supported in part by institutional and research funding agencies. The final funding statement should be adjusted according to the official grant information required by the authors and institution.}
+
+\markboth
+{Carvalho, A. R. and Levada, A. L. M.: GEONLMHibrid for Salt-and-Pepper Image Denoising}
+{Carvalho, A. R. and Levada, A. L. M.: GEONLMHibrid for Salt-and-Pepper Image Denoising}
+
+\corresp{Corresponding author: Adriano dos Reis Carvalho (e-mail: adriano.carvalho@ifsuldeminas.edu.br)}
+
+\begin{abstract}
+Salt-and-pepper noise is a sparse impulsive degradation that replaces image pixels by extreme intensity values, usually 0 and 255. Although Non-Local Means (NLM) and graph-based non-local extensions are effective for Gaussian-like noise, they are not naturally designed to handle impulse corruption, since corrupted pixels may affect both patch similarity and weighted aggregation. In this work, we propose GEONLMHibrid, a switching geodesic non-local median method designed specifically for salt-and-pepper image denoising. The proposed method combines impulse detection, ASWMF-inspired candidate rejection, ASWMF spatial weighting, and geodesic patch aggregation on local $k$-nearest-neighbor graphs. Unlike standard non-local filters, GEONLMHibrid modifies only pixels detected as impulses and preserves all remaining pixels unchanged. Experiments on Set12 and Set50 under multiple salt-and-pepper noise densities show that the proposed method consistently outperforms NLM, median filtering, non-local medians, and ASWMF in average score. On Set50, GEONLMHibrid achieved average scores of 69.65, 66.83, 67.86, 65.08, and 62.71 for low, medium, moderate, high, and extreme noise levels, respectively, outperforming ASWMF in all evaluated scenarios.
+% PT: O ruído sal-e-pimenta é uma degradação impulsiva esparsa que substitui pixels da imagem por valores extremos de intensidade, geralmente 0 e 255. Embora o Non-Local Means (NLM) e extensões não locais baseadas em grafos sejam eficazes para ruídos semelhantes ao Gaussiano, eles não são naturalmente projetados para lidar com corrupção impulsiva, pois pixels corrompidos podem afetar tanto a similaridade entre patches quanto a agregação ponderada. Neste trabalho, propomos o GEONLMHibrid, um método geodésico não local com chaveamento e mediana, projetado especificamente para remoção de ruído sal-e-pimenta. O método combina detecção de impulsos, rejeição de candidatos inspirada no ASWMF, pesos espaciais do ASWMF e agregação geodésica de patches em grafos locais de k-vizinhos mais próximos. Diferente dos filtros não locais tradicionais, o GEONLMHibrid modifica apenas pixels detectados como impulsos e preserva os demais inalterados. Experimentos nos conjuntos Set12 e Set50 sob múltiplas densidades de ruído sal-e-pimenta mostram que o método proposto supera consistentemente NLM, filtro de mediana, non-local medians e ASWMF em score médio. No Set50, o GEONLMHibrid obteve scores médios de 69,65, 66,83, 67,86, 65,08 e 62,71 para níveis baixo, médio, moderado, alto e extremo de ruído, respectivamente, superando o ASWMF em todos os cenários avaliados.
+\end{abstract}
+
+\begin{keywords}
+Image denoising, salt-and-pepper noise, Non-Local Means, geodesic distance, graph-based filtering, switching filters, adaptive weighted median filtering.
+\end{keywords}
+
+\titlepgskip=-21pt
+\maketitle
+
+\section{Introduction}
+\label{sec:introduction}
+
+\PARstart{I}{mage} denoising is a fundamental inverse problem in image processing, aiming to recover a clean image from a degraded observation. It is an important preprocessing step in computational photography, medical imaging, microscopy, remote sensing, and several computer vision pipelines. Different noise models require different restoration strategies, and the design of a denoising method is strongly influenced by the statistical nature of the degradation.
+% PT: A remoção de ruído em imagens é um problema inverso fundamental em processamento de imagens, cujo objetivo é recuperar uma imagem limpa a partir de uma observação degradada. Ela é uma etapa importante de pré-processamento em fotografia computacional, imagens médicas, microscopia, sensoriamento remoto e diversos fluxos de visão computacional. Diferentes modelos de ruído exigem estratégias distintas de restauração, e o projeto de um método de denoising é fortemente influenciado pela natureza estatística da degradação.
+
+Salt-and-pepper noise is one of the most common impulsive noise models. In this setting, a subset of pixels is randomly replaced by the minimum or maximum intensity values, typically 0 and 255 in 8-bit grayscale images. This type of corruption is sparse but highly destructive, since the corrupted pixels are strong outliers that may break local structures, distort edges, and degrade patch-based similarity computations.
+% PT: O ruído sal-e-pimenta é um dos modelos de ruído impulsivo mais comuns. Nesse caso, um subconjunto de pixels é substituído aleatoriamente pelos valores mínimo ou máximo de intensidade, tipicamente 0 e 255 em imagens em tons de cinza de 8 bits. Esse tipo de corrupção é esparso, mas altamente destrutivo, pois os pixels corrompidos são outliers fortes que podem quebrar estruturas locais, distorcer bordas e degradar cálculos de similaridade baseados em patches.
+
+Classical linear filters are usually not appropriate for salt-and-pepper noise because they smooth both corrupted and uncorrupted pixels. Median-based filters are more effective because they are naturally robust to outliers. In particular, switching filters modify only pixels identified as corrupted, preserving clean pixels unchanged. This idea is essential for impulse noise removal, since most pixels remain reliable even at moderate noise densities.
+% PT: Filtros lineares clássicos geralmente não são adequados para ruído sal-e-pimenta, pois suavizam tanto pixels corrompidos quanto não corrompidos. Filtros baseados em mediana são mais eficazes porque são naturalmente robustos a outliers. Em particular, filtros com chaveamento modificam apenas pixels identificados como corrompidos, preservando pixels limpos inalterados. Essa ideia é essencial para a remoção de ruído impulsivo, pois a maioria dos pixels permanece confiável mesmo em densidades moderadas de ruído.
+
+Non-Local Means (NLM) introduced a powerful patch-based denoising framework that exploits self-similarity in images. Instead of averaging pixels only in a local neighborhood, NLM computes a weighted average of pixels whose surrounding patches are similar to the target patch. This non-local principle allows the method to preserve textures and repeated structures more effectively than local filters. However, standard NLM is mainly designed for additive Gaussian noise and may perform poorly under impulsive corruption, since salt-and-pepper pixels contaminate both the patch vectors and the final weighted average.
+% PT: O Non-Local Means (NLM) introduziu uma estrutura poderosa de denoising baseada em patches, explorando a auto-similaridade presente nas imagens. Em vez de calcular médias apenas em uma vizinhança local, o NLM calcula uma média ponderada de pixels cujos patches ao redor são semelhantes ao patch alvo. Esse princípio não local permite preservar texturas e estruturas repetidas de forma mais eficaz do que filtros locais. No entanto, o NLM padrão foi projetado principalmente para ruído Gaussiano aditivo e pode ter desempenho ruim sob corrupção impulsiva, pois pixels sal-e-pimenta contaminam tanto os vetores de patches quanto a média ponderada final.
+
+Graph-based non-local methods, such as GEO-NLM, extend NLM by replacing direct Euclidean patch distances with geodesic distances computed on weighted patch graphs. This strategy captures the intrinsic geometry of the patch space and can improve robustness when the image patch distribution follows nonlinear structures. Nevertheless, for salt-and-pepper noise, geodesic similarity alone is not sufficient: corrupted pixels must be explicitly detected and prevented from contributing to the restoration.
+% PT: Métodos não locais baseados em grafos, como o GEO-NLM, estendem o NLM substituindo distâncias Euclidianas diretas entre patches por distâncias geodésicas computadas em grafos ponderados de patches. Essa estratégia captura a geometria intrínseca do espaço de patches e pode melhorar a robustez quando a distribuição de patches da imagem segue estruturas não lineares. Ainda assim, para ruído sal-e-pimenta, a similaridade geodésica por si só não é suficiente: pixels corrompidos precisam ser explicitamente detectados e impedidos de contribuir para a restauração.
+
+In this work, we propose GEONLMHibrid, a switching geodesic non-local method for salt-and-pepper denoising. The method combines the selectivity of switching filters, the impulse rejection strategy of ASWMF, spatial weights inspired by ASWMF, and graph-based geodesic patch aggregation. The central idea is simple: clean pixels should remain unchanged, while corrupted pixels should be restored using reliable non-impulse candidates selected through non-local patch geometry.
+% PT: Neste trabalho, propomos o GEONLMHibrid, um método geodésico não local com chaveamento para remoção de ruído sal-e-pimenta. O método combina a seletividade dos filtros com chaveamento, a estratégia de rejeição de impulsos do ASWMF, pesos espaciais inspirados no ASWMF e agregação geodésica de patches baseada em grafos. A ideia central é simples: pixels limpos devem permanecer inalterados, enquanto pixels corrompidos devem ser restaurados usando candidatos confiáveis não impulsivos selecionados pela geometria não local dos patches.
+
+The main contributions of this paper are summarized as follows:
+% PT: As principais contribuições deste artigo são resumidas a seguir:
+
+\begin{itemize}
+    \item We introduce a switching geodesic non-local method specifically designed for salt-and-pepper noise removal.
+    % PT: Introduzimos um método geodésico não local com chaveamento, projetado especificamente para remoção de ruído sal-e-pimenta.
+    \item We integrate ASWMF-inspired impulse candidate rejection into a local patch graph aggregation framework.
+    % PT: Integramos a rejeição de candidatos impulsivos inspirada no ASWMF em uma estrutura de agregação local baseada em grafos de patches.
+    \item We propose a hybrid weighting scheme that combines geodesic patch similarity and ASWMF spatial weights.
+    % PT: Propomos um esquema híbrido de pesos que combina similaridade geodésica entre patches e pesos espaciais do ASWMF.
+    \item We evaluate the method on Set12 and Set50 under five salt-and-pepper noise levels and compare it against NLM, median filtering, ASWMF, and non-local medians.
+    % PT: Avaliamos o método nos conjuntos Set12 e Set50 sob cinco níveis de ruído sal-e-pimenta e o comparamos com NLM, filtro de mediana, ASWMF e non-local medians.
+\end{itemize}
+
+The remainder of this paper is organized as follows. Section~\ref{sec:related} reviews related work. Section~\ref{sec:background} presents the NLM and non-local median frameworks. Section~\ref{sec:spnoise} discusses salt-and-pepper noise and switching filters. Section~\ref{sec:method} introduces the proposed GEONLMHibrid method. Section~\ref{sec:experiments} describes the experimental setup. Section~\ref{sec:results} reports and discusses the results. Finally, Section~\ref{sec:conclusion} concludes the paper.
+% PT: O restante deste artigo está organizado da seguinte forma. A Seção~\ref{sec:related} revisa os trabalhos relacionados. A Seção~\ref{sec:background} apresenta os fundamentos de NLM e non-local medians. A Seção~\ref{sec:spnoise} discute ruído sal-e-pimenta e filtros com chaveamento. A Seção~\ref{sec:method} introduz o método GEONLMHibrid proposto. A Seção~\ref{sec:experiments} descreve a configuração experimental. A Seção~\ref{sec:results} apresenta e discute os resultados. Por fim, a Seção~\ref{sec:conclusion} conclui o artigo.
+
+\section{Related Work}
+\label{sec:related}
+
+Median filtering is one of the most widely used approaches for impulse noise removal. By replacing each pixel with the median value in a local neighborhood, the method suppresses outliers more effectively than linear averaging filters. However, the standard median filter applies the same operation to all pixels, including uncorrupted ones, which may blur fine details and alter clean structures.
+% PT: O filtro de mediana é uma das abordagens mais utilizadas para remoção de ruído impulsivo. Ao substituir cada pixel pelo valor mediano em uma vizinhança local, o método suprime outliers de forma mais eficaz do que filtros lineares de média. No entanto, o filtro de mediana padrão aplica a mesma operação a todos os pixels, incluindo os não corrompidos, o que pode borrar detalhes finos e alterar estruturas limpas.
+
+Switching median filters address this limitation by first detecting whether a pixel is corrupted and then filtering only those pixels classified as impulses. Adaptive Switching Weighted Mean Filter (ASWMF) follows this principle and is particularly effective for salt-and-pepper noise. Its strength comes from three simple mechanisms: impulse detection, rejection of candidate pixels with values 0 or 255, and weighted local reconstruction.
+% PT: Filtros de mediana com chaveamento resolvem essa limitação ao detectar primeiro se um pixel está corrompido e, em seguida, filtrar apenas os pixels classificados como impulsos. O Adaptive Switching Weighted Mean Filter (ASWMF) segue esse princípio e é particularmente eficaz para ruído sal-e-pimenta. Sua força vem de três mecanismos simples: detecção de impulsos, rejeição de pixels candidatos com valores 0 ou 255 e reconstrução local ponderada.
+
+NLM and its variants exploit patch redundancy to improve denoising quality. The classical NLM filter compares patches using Euclidean distances and reconstructs each pixel as a weighted average of similar pixels. Several extensions have been proposed to improve robustness, reduce computational cost, or adapt the method to non-Gaussian noise. However, standard NLM remains vulnerable to impulsive outliers because patch distances and pixel aggregation can be dominated by corrupted values.
+% PT: O NLM e suas variantes exploram a redundância entre patches para melhorar a qualidade da remoção de ruído. O filtro NLM clássico compara patches usando distâncias Euclidianas e reconstrói cada pixel como uma média ponderada de pixels semelhantes. Diversas extensões foram propostas para melhorar a robustez, reduzir o custo computacional ou adaptar o método a ruídos não Gaussianos. No entanto, o NLM padrão continua vulnerável a outliers impulsivos, pois distâncias entre patches e agregação de pixels podem ser dominadas por valores corrompidos.
+
+Non-local median methods replace or complement the mean aggregation of NLM with median-based robust statistics. Such methods are better suited to impulsive noise because the median is less sensitive to extreme values. Nevertheless, non-local medians may still process all pixels, including clean ones, and may not fully exploit the fact that salt-and-pepper noise has easily identifiable impulse values.
+% PT: Métodos de non-local medians substituem ou complementam a agregação por média do NLM com estatísticas robustas baseadas em mediana. Esses métodos são mais adequados para ruído impulsivo porque a mediana é menos sensível a valores extremos. Ainda assim, non-local medians podem processar todos os pixels, inclusive os limpos, e podem não explorar completamente o fato de que o ruído sal-e-pimenta possui valores impulsivos facilmente identificáveis.
+
+Graph-based and manifold-aware non-local methods model image patches as nodes in a graph and use graph distances to describe patch relationships. GEO-NLM follows this idea by computing geodesic distances on local patch graphs and using them as similarity measures for denoising. The present work builds on this graph-based perspective but introduces impulse-aware switching and ASWMF-inspired candidate rejection to adapt the method to salt-and-pepper noise.
+% PT: Métodos não locais baseados em grafos e variedades modelam patches da imagem como nós em um grafo e usam distâncias no grafo para descrever relações entre patches. O GEO-NLM segue essa ideia ao computar distâncias geodésicas em grafos locais de patches e usá-las como medidas de similaridade para denoising. O presente trabalho parte dessa perspectiva baseada em grafos, mas introduz chaveamento orientado a impulsos e rejeição de candidatos inspirada no ASWMF para adaptar o método ao ruído sal-e-pimenta.
+
+\section{Background: NLM and Non-Local Medians}
+\label{sec:background}
+
+Let $v$ be a noisy image and let $\eta_i$ denote a patch centered at pixel $i$. The classical NLM estimate at pixel $i$ is given by
+% PT: Seja $v$ uma imagem ruidosa e seja $\eta_i$ um patch centrado no pixel $i$. A estimativa clássica do NLM no pixel $i$ é dada por
+\begin{equation}
+NL[v](i) =
+\frac{\sum_{j \in \Omega_i} w(i,j)v(j)}
+{\sum_{j \in \Omega_i} w(i,j)},
+\label{eq:nlm}
+\end{equation}
+where $\Omega_i$ is the search window around pixel $i$.
+% PT: em que $\Omega_i$ é a janela de busca ao redor do pixel $i$.
+
+The classical similarity weight is computed as
+% PT: O peso clássico de similaridade é calculado como
+\begin{equation}
+w(i,j) =
+\exp\left(
+-\frac{\|v(\eta_i)-v(\eta_j)\|_2^2}{h^2}
+\right),
+\label{eq:nlm_weight}
+\end{equation}
+where $h$ controls the amount of smoothing. Small values of $h$ make the method selective, while large values increase smoothing.
+% PT: em que $h$ controla a quantidade de suavização. Valores pequenos de $h$ tornam o método seletivo, enquanto valores grandes aumentam a suavização.
+
+Non-local median methods modify the aggregation step by using robust median-based estimates. In the implementation considered in this work, each candidate patch is analyzed through its local median $m_j$ and standard deviation $\sigma_j$. A candidate center value is replaced by the patch median when it falls outside the confidence interval
+% PT: Métodos de non-local medians modificam a etapa de agregação usando estimativas robustas baseadas em mediana. Na implementação considerada neste trabalho, cada patch candidato é analisado por sua mediana local $m_j$ e desvio padrão $\sigma_j$. O valor central de um candidato é substituído pela mediana do patch quando cai fora do intervalo de confiança
+\begin{equation}
+m_j - 1.96\sigma_j < v(j) < m_j + 1.96\sigma_j.
+\label{eq:nlmedian_interval}
+\end{equation}
+This rule increases robustness against impulsive outliers but does not explicitly use the binary nature of salt-and-pepper corruption.
+% PT: Essa regra aumenta a robustez contra outliers impulsivos, mas não usa explicitamente a natureza binária da corrupção sal-e-pimenta.
+
+\section{Salt-and-Pepper Noise and Switching Filters}
+\label{sec:spnoise}
+
+In salt-and-pepper noise, the observed image $y$ is obtained from a clean image $x$ by replacing a subset of pixels with impulse values. For 8-bit grayscale images, the corruption model can be described as
+% PT: No ruído sal-e-pimenta, a imagem observada $y$ é obtida a partir de uma imagem limpa $x$ pela substituição de um subconjunto de pixels por valores impulsivos. Para imagens em tons de cinza de 8 bits, o modelo de corrupção pode ser descrito como
+\begin{equation}
+y(i)=
+\begin{cases}
+0, & \text{with probability } p/2,\\
+255, & \text{with probability } p/2,\\
+x(i), & \text{with probability } 1-p,
+\end{cases}
+\label{eq:sp_model}
+\end{equation}
+where $p$ is the total noise density.
+% PT: em que $p$ é a densidade total de ruído.
+
+This model suggests a natural switching strategy: pixels with values different from 0 and 255 are likely to be clean and should not be modified. Conversely, pixels equal to 0 or 255 should be treated as potentially corrupted and restored using neighboring reliable information.
+% PT: Esse modelo sugere uma estratégia natural de chaveamento: pixels com valores diferentes de 0 e 255 provavelmente estão limpos e não devem ser modificados. Por outro lado, pixels iguais a 0 ou 255 devem ser tratados como potencialmente corrompidos e restaurados usando informações vizinhas confiáveis.
+
+ASWMF follows this philosophy by discarding local candidates equal to 0 or 255 and reconstructing corrupted pixels using weighted valid samples. This behavior motivated the proposed GEONLMHibrid method, which transfers the main impulse-specific mechanisms of ASWMF to a graph-based non-local setting.
+% PT: O ASWMF segue essa filosofia ao descartar candidatos locais iguais a 0 ou 255 e reconstruir pixels corrompidos usando amostras válidas ponderadas. Esse comportamento motivou o método GEONLMHibrid proposto, que transfere os principais mecanismos específicos para impulsos do ASWMF para uma estrutura não local baseada em grafos.
+
+\section{The Proposed GEONLMHibrid Method}
+\label{sec:method}
+
+The proposed method restores only pixels detected as impulses. Given a noisy image $y$, if $y(i) \notin \{0,255\}$, then the output is simply $\hat{x}(i)=y(i)$. If $y(i) \in \{0,255\}$, the method constructs a local patch graph inside a search window and estimates the restored value using valid non-impulse candidates.
+% PT: O método proposto restaura apenas pixels detectados como impulsos. Dada uma imagem ruidosa $y$, se $y(i) \notin \{0,255\}$, então a saída é simplesmente $\hat{x}(i)=y(i)$. Se $y(i) \in \{0,255\}$, o método constrói um grafo local de patches dentro de uma janela de busca e estima o valor restaurado usando candidatos válidos não impulsivos.
+
+For each corrupted pixel, patches of radius $f$ are extracted from a search window of radius $t$. In this work, the final configuration uses $f=2$ and $t=3$. The extracted patches are represented as feature vectors, and a local $k$-nearest-neighbor graph is built with $k=7$.
+% PT: Para cada pixel corrompido, patches de raio $f$ são extraídos de uma janela de busca de raio $t$. Neste trabalho, a configuração final usa $f=2$ e $t=3$. Os patches extraídos são representados como vetores de características, e um grafo local de $k$-vizinhos mais próximos é construído com $k=7$.
+
+Let $d_g(i,j)$ be the geodesic distance from the central corrupted patch to a candidate patch $j$, computed as the shortest-path distance on the local weighted graph. The geodesic similarity weight is defined as
+% PT: Seja $d_g(i,j)$ a distância geodésica do patch central corrompido até um patch candidato $j$, computada como a distância de caminho mínimo no grafo local ponderado. O peso de similaridade geodésica é definido como
+\begin{equation}
+w_g(i,j)=
+\exp\left(
+-\frac{d_g(i,j)^2}{h^2}
+\right),
+\label{eq:geodesic_weight}
+\end{equation}
+where $h=0.005h_{\mathrm{NLM}}$, and $h_{\mathrm{NLM}}$ is the optimized NLM parameter previously selected for each image.
+% PT: em que $h=0.005h_{\mathrm{NLM}}$, e $h_{\mathrm{NLM}}$ é o parâmetro otimizado do NLM previamente selecionado para cada imagem.
+
+Candidates whose central values are also impulses are discarded:
+% PT: Candidatos cujos valores centrais também são impulsos são descartados:
+\begin{equation}
+\Omega_i^{*} =
+\{j \in \Omega_i \mid y(j) \notin \{0,255\}\}.
+\label{eq:valid_candidates}
+\end{equation}
+This prevents corrupted pixels from contributing to the restored value.
+% PT: Isso impede que pixels corrompidos contribuam para o valor restaurado.
+
+The final weight combines geodesic similarity and an ASWMF-inspired spatial weight:
+% PT: O peso final combina similaridade geodésica e um peso espacial inspirado no ASWMF:
+\begin{equation}
+w(i,j) = w_g(i,j)w_s(i,j).
+\label{eq:hybrid_weight}
+\end{equation}
+The spatial term $w_s(i,j)$ follows the ASWMF configuration used in the experiments, with diagonal weights equal to 1 and remaining valid positions weighted by 10.
+% PT: O termo espacial $w_s(i,j)$ segue a configuração do ASWMF usada nos experimentos, com pesos diagonais iguais a 1 e demais posições válidas ponderadas por 10.
+
+The restored value is computed as
+% PT: O valor restaurado é calculado como
+\begin{equation}
+\hat{x}(i)=
+\frac{\sum_{j\in\Omega_i^{*}}w(i,j)y(j)}
+{\sum_{j\in\Omega_i^{*}}w(i,j)}.
+\label{eq:hybrid_estimate}
+\end{equation}
+If no valid candidate exists, the method falls back to a local ASWMF-style estimate.
+% PT: Se nenhum candidato válido existir, o método usa como fallback uma estimativa local no estilo ASWMF.
+
+\begin{algorithm}
+\caption{GEONLMHibrid}
+\label{alg:geonlmhibrid}
+\begin{algorithmic}[1]
+\Require Noisy image $y$, patch radius $f$, search radius $t$, number of graph neighbors $k$, parameter $h$
+\Ensure Denoised image $\hat{x}$
+\For{each pixel $i$ in $y$}
+    \If{$y(i) \notin \{0,255\}$}
+        \State $\hat{x}(i) \gets y(i)$
+    \Else
+        \State Extract all patches in the search window $\Omega_i$
+        \State Build a local $k$-nearest-neighbor graph from the patch vectors
+        \State Compute geodesic distances $d_g(i,j)$ from the central patch
+        \State Reject candidates $j$ such that $y(j)\in\{0,255\}$
+        \State Compute $w_g(i,j)$ using Eq.~\eqref{eq:geodesic_weight}
+        \State Compute $w(i,j)=w_g(i,j)w_s(i,j)$
+        \If{there is at least one valid candidate}
+            \State Estimate $\hat{x}(i)$ using Eq.~\eqref{eq:hybrid_estimate}
+        \Else
+            \State Estimate $\hat{x}(i)$ using the ASWMF fallback
+        \EndIf
+    \EndIf
+\EndFor
+\State \Return $\hat{x}$
+\end{algorithmic}
+\end{algorithm}
+% PT: O Algoritmo~\ref{alg:geonlmhibrid} resume o método GEONLMHibrid. Ele preserva pixels não impulsivos, constrói grafos locais apenas para pixels corrompidos, rejeita candidatos 0/255, combina pesos geodésicos e pesos espaciais do ASWMF, e usa fallback ASWMF quando não há candidatos válidos.
+
+\section{Experimental Setup}
+\label{sec:experiments}
+
+The proposed method was evaluated on the Set12 and Set50 grayscale image datasets. All experiments were conducted using images resized or preserved at $512\times512$ pixels, according to the stored experimental outputs. Salt-and-pepper noise was evaluated at five density levels: low, medium, moderate, high, and extreme.
+% PT: O método proposto foi avaliado nos conjuntos de imagens em tons de cinza Set12 e Set50. Todos os experimentos foram conduzidos usando imagens redimensionadas ou preservadas em $512\times512$ pixels, de acordo com as saídas experimentais armazenadas. O ruído sal-e-pimenta foi avaliado em cinco níveis de densidade: baixo, médio, moderado, alto e extremo.
+
+The compared methods were standard NLM, median filtering, ASWMF, non-local medians, and the proposed GEONLMHibrid. The NLM results were reused from previously generated pickle files, in which the parameter $h_{\mathrm{NLM}}$ had already been selected by evaluating multiple candidate values. This avoids recomputing the expensive NLM parameter search and ensures that all methods are compared using the same noisy and reference images.
+% PT: Os métodos comparados foram NLM padrão, filtro de mediana, ASWMF, non-local medians e o GEONLMHibrid proposto. Os resultados do NLM foram reutilizados a partir de arquivos pickle previamente gerados, nos quais o parâmetro $h_{\mathrm{NLM}}$ já havia sido selecionado pela avaliação de múltiplos valores candidatos. Isso evita recomputar a busca custosa do parâmetro do NLM e garante que todos os métodos sejam comparados usando as mesmas imagens ruidosas e de referência.
+
+The final GEONLMHibrid configuration used $f=2$, $t=3$, $k=7$, and $h=0.005h_{\mathrm{NLM}}$. The ASWMF-inspired spatial weights were set to 1, 1, and 10, matching the experimental ASWMF configuration. Median filtering used a $3\times3$ window with reflective boundary conditions.
+% PT: A configuração final do GEONLMHibrid usou $f=2$, $t=3$, $k=7$ e $h=0.005h_{\mathrm{NLM}}$. Os pesos espaciais inspirados no ASWMF foram definidos como 1, 1 e 10, correspondendo à configuração experimental do ASWMF. O filtro de mediana usou uma janela $3\times3$ com condições de contorno reflexivas.
+
+Performance was measured using PSNR, SSIM, and a combined score defined as
+% PT: O desempenho foi medido usando PSNR, SSIM e um score combinado definido como
+\begin{equation}
+Score = 0.5\cdot PSNR + 0.5\cdot(100\cdot SSIM).
+\label{eq:score}
+\end{equation}
+This score balances pixel-level fidelity and structural similarity.
+% PT: Esse score equilibra fidelidade em nível de pixel e similaridade estrutural.
+
+\section{Results and Discussion}
+\label{sec:results}
+
+Table~\ref{tab:set12_score} reports the average score obtained on Set12. GEONLMHibrid achieved the highest average score in all noise levels. The improvement is especially pronounced at medium, moderate, high, and extreme noise levels, where impulse corruption is more frequent and the switching mechanism becomes increasingly important.
+% PT: A Tabela~\ref{tab:set12_score} apresenta o score médio obtido no Set12. O GEONLMHibrid obteve o maior score médio em todos os níveis de ruído. A melhora é especialmente pronunciada nos níveis médio, moderado, alto e extremo, nos quais a corrupção impulsiva é mais frequente e o mecanismo de chaveamento se torna cada vez mais importante.
+
+\begin{table}[!t]
+\centering
+\caption{Average score on Set12.}
+\label{tab:set12_score}
+\begin{tabular}{lccccc}
+\toprule
+Noise level & NLM & Median & ASWMF & NLMedian & GEONLMHibrid \\
+\midrule
+Low      & 57.50 & 65.37 & 66.89 & 69.05 & \textbf{72.49} \\
+Medium   & 51.31 & 64.46 & 67.13 & 61.99 & \textbf{69.71} \\
+Moderate & 53.70 & 64.95 & 67.18 & 65.56 & \textbf{70.67} \\
+High     & 46.94 & 63.39 & 66.36 & 51.98 & \textbf{68.20} \\
+Extreme  & 41.67 & 59.60 & 64.55 & 33.31 & \textbf{66.37} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:set50_score} reports the average score obtained on Set50. The proposed method again achieved the highest average score for all noise levels. The results show that GEONLMHibrid is not only competitive with ASWMF, a specialized impulse-noise filter, but also consistently improves over it in the evaluated scenarios.
+% PT: A Tabela~\ref{tab:set50_score} apresenta o score médio obtido no Set50. O método proposto novamente obteve o maior score médio em todos os níveis de ruído. Os resultados mostram que o GEONLMHibrid não apenas é competitivo com o ASWMF, um filtro especializado para ruído impulsivo, como também o supera consistentemente nos cenários avaliados.
+
+\begin{table}[!t]
+\centering
+\caption{Average score on Set50.}
+\label{tab:set50_score}
+\begin{tabular}{lccccc}
+\toprule
+Noise level & NLM & Median & ASWMF & NLMedian & GEONLMHibrid \\
+\midrule
+Low      & 52.05 & 56.74 & 61.48 & 64.88 & \textbf{69.65} \\
+Medium   & 44.08 & 56.33 & 63.37 & 60.60 & \textbf{66.83} \\
+Moderate & 46.57 & 56.55 & 62.78 & 63.24 & \textbf{67.86} \\
+High     & 39.37 & 55.68 & 63.34 & 52.21 & \textbf{65.08} \\
+Extreme  & 34.06 & 53.02 & 61.33 & 35.50 & \textbf{62.71} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The comparison with ASWMF is particularly relevant because ASWMF is designed specifically for salt-and-pepper noise. GEONLMHibrid incorporates the strongest properties of ASWMF, namely switching, impulse candidate rejection, and spatial weighting, but combines them with geodesic non-local patch aggregation. This explains why the proposed method preserves the robustness of ASWMF while improving reconstruction through non-local structural information.
+% PT: A comparação com o ASWMF é particularmente relevante porque o ASWMF foi projetado especificamente para ruído sal-e-pimenta. O GEONLMHibrid incorpora as propriedades mais fortes do ASWMF, isto é, chaveamento, rejeição de candidatos impulsivos e pesos espaciais, mas as combina com agregação geodésica não local de patches. Isso explica por que o método proposto preserva a robustez do ASWMF enquanto melhora a reconstrução por meio de informação estrutural não local.
+
+The results also show that non-local medians are strong at low noise levels but degrade substantially at high and extreme noise levels, especially on Set50. This behavior suggests that median-based robust aggregation alone is insufficient when impulse density increases. In contrast, GEONLMHibrid remains stable because it explicitly avoids using impulse pixels as candidates.
+% PT: Os resultados também mostram que non-local medians são fortes em baixos níveis de ruído, mas degradam substancialmente em níveis alto e extremo, especialmente no Set50. Esse comportamento sugere que a agregação robusta baseada apenas em mediana é insuficiente quando a densidade de impulsos aumenta. Em contraste, o GEONLMHibrid permanece estável porque evita explicitamente usar pixels impulsivos como candidatos.
+
+Although the proposed method requires graph construction for corrupted pixels, the switching mechanism reduces the computational cost by avoiding unnecessary processing of clean pixels. This is important because only impulse pixels require restoration, and processing the entire image would be wasteful for sparse salt-and-pepper corruption.
+% PT: Embora o método proposto exija a construção de grafos para pixels corrompidos, o mecanismo de chaveamento reduz o custo computacional ao evitar o processamento desnecessário de pixels limpos. Isso é importante porque apenas pixels impulsivos precisam de restauração, e processar a imagem inteira seria desperdício para corrupção sal-e-pimenta esparsa.
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+This paper proposed GEONLMHibrid, a switching geodesic non-local method for salt-and-pepper image denoising. The method processes only impulse pixels, rejects corrupted candidates, combines geodesic patch similarity with ASWMF spatial weights, and reconstructs corrupted pixels using reliable non-local information. This combination provides a simple and interpretable model-based method specialized for impulse noise.
+% PT: Este artigo propôs o GEONLMHibrid, um método geodésico não local com chaveamento para remoção de ruído sal-e-pimenta em imagens. O método processa apenas pixels impulsivos, rejeita candidatos corrompidos, combina similaridade geodésica entre patches com pesos espaciais do ASWMF e reconstrói pixels corrompidos usando informação não local confiável. Essa combinação fornece um método baseado em modelo simples, interpretável e especializado para ruído impulsivo.
+
+Experiments on Set12 and Set50 demonstrated that GEONLMHibrid outperforms NLM, median filtering, ASWMF, and non-local medians in average score across all evaluated noise levels. The results indicate that combining impulse-specific local priors with graph-based non-local similarity is an effective strategy for salt-and-pepper denoising.
+% PT: Experimentos nos conjuntos Set12 e Set50 demonstraram que o GEONLMHibrid supera NLM, filtro de mediana, ASWMF e non-local medians em score médio em todos os níveis de ruído avaliados. Os resultados indicam que combinar priors locais específicos para impulsos com similaridade não local baseada em grafos é uma estratégia eficaz para remoção de ruído sal-e-pimenta.
+
+Future work will investigate adaptive parameter selection, alternative graph construction strategies, and extensions to mixed noise models involving both impulsive and Gaussian components. Additional visual quality analyses and runtime optimization will also be considered.
+% PT: Trabalhos futuros investigarão seleção adaptativa de parâmetros, estratégias alternativas de construção de grafos e extensões para modelos de ruído misto envolvendo componentes impulsivos e Gaussianos. Análises adicionais de qualidade visual e otimização de tempo de execução também serão consideradas.
+
+\begin{thebibliography}{00}
+
+\bibitem{buades2005nlm}
+A. Buades, B. Coll, and J.-M. Morel, ``A non-local algorithm for image denoising,'' in \emph{Proc. IEEE CVPR}, 2005, pp. 60--65.
+
+\bibitem{dabov2007bm3d}
+K. Dabov, A. Foi, V. Katkovnik, and K. Egiazarian, ``Image denoising by sparse 3-D transform-domain collaborative filtering,'' \emph{IEEE Trans. Image Process.}, vol. 16, no. 8, pp. 2080--2095, 2007.
+
+\bibitem{nlmedians}
+A. L. M. Levada, ``Non-local medians filter for joint Gaussian and impulsive image denoising,'' in \emph{Proc. SIBGRAPI}, 2021, pp. 152--159.
+
+\bibitem{aswmf}
+T. M. Thanh, V. B. S. Prasath, and L. M. Hieu, ``An adaptive switching weighted mean filter for salt-and-pepper noise removal,'' 2020.
+
+\bibitem{geonlm}
+A. R. Carvalho and A. L. M. Levada, ``GEO-NLM: Non-local single image denoising with geodesic distances in weighted graphs,'' manuscript under preparation.
+
+\end{thebibliography}
+
+\end{document}
