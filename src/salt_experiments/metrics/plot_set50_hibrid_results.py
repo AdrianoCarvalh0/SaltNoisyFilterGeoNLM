@@ -48,7 +48,7 @@ METHODS = [
         "linestyle": "-",
     },
     {
-        "label": "GeoHibNLM",
+        "label": "GHNLM",
         "key": "geonlm_hibrid",
         "color": "#d62728",
         "marker": "*",
@@ -60,7 +60,7 @@ SUMMARY_METHODS = [
     ("NLM", "nlm", "#0099c8"),
     ("Median", "median", "#9467bd"),
     ("NLMedians", "nlmedians", "#ff7f0e"),
-    ("GeoHibNLM", "geonlm_hibrid", "#d62728"),
+    ("GHNLM", "geonlm_hibrid", "#d62728"),
 ]
 
 
