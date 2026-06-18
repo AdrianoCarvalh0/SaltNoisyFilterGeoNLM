@@ -19,6 +19,7 @@ from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 
 from functions.Utils import load_pickle, save_pickle, save_results_to_xlsx
 from functions.geonlm_medians_functions import run_geonlm_medians_pipeline
+from functions.anlm_functions import run_anlm_pipeline
 from NLMedians import run_nlmedians
 
 
@@ -88,7 +89,7 @@ def metrics(reference, image):
 
 
 def ensure_dirs(root):
-    for subdir in ["NLM", "MEDIAN", "NLMedians", "GEONLMHibrid", "results"]:
+    for subdir in ["NLM", "MEDIAN", "NLMedians", "GEONLMHibrid", "ANLM", "results"]:
         (root / subdir).mkdir(parents=True, exist_ok=True)
 
 
@@ -145,6 +146,48 @@ def read_or_run_median(item, out_path):
     return filtered_uint8, psnr, ssim, method_score, elapsed
 
 
+def read_or_run_aswmf_from_folder(item, out_path):
+    reference = item["img_reference_np"]
+    if out_path.exists():
+        image = skimage.io.imread(str(out_path))
+        psnr, ssim, method_score = metrics(reference, image)
+        return image, psnr, ssim, method_score
+    return None, np.nan, np.nan, np.nan
+
+
+def force_anlm_run():
+    return force_run() or os.environ.get("SET12_HIBRID_FORCE_ANLM", "0") == "1"
+
+
+def read_or_run_anlm(item, out_path):
+    reference = item["img_reference_np"]
+    if out_path.exists() and not force_anlm_run():
+        image = skimage.io.imread(str(out_path))
+        psnr, ssim, method_score = metrics(reference, image)
+        return image, psnr, ssim, method_score, np.nan, (
+            float(item["nlm_h"]) * HYBRID_CONFIG["h_multiplier"]
+        )
+
+    start = time.time()
+    filtered, h_used, psnr, ssim, method_score = run_anlm_pipeline(
+        img_original=reference,
+        h_base=float(item["nlm_h"]),
+        img_noisy=item["img_noisy_salt_pepper_np"],
+        f=HYBRID_CONFIG["f"],
+        t=HYBRID_CONFIG["t"],
+        mult=HYBRID_CONFIG["h_multiplier"],
+        switch_impulse_only=HYBRID_CONFIG["switch_impulse_only"],
+        reject_impulse_candidates=HYBRID_CONFIG["reject_impulse_candidates"],
+        use_aswmf_spatial_weights=HYBRID_CONFIG["use_aswmf_spatial_weights"],
+        aswmf_weight_diag_1=HYBRID_CONFIG["aswmf_weight_diag_1"],
+        aswmf_weight_diag_2=HYBRID_CONFIG["aswmf_weight_diag_2"],
+        aswmf_weight_other=HYBRID_CONFIG["aswmf_weight_other"],
+    )
+    elapsed = time.time() - start
+    save_uint8(out_path, filtered)
+    return filtered, psnr, ssim, method_score, elapsed, h_used
+
+
 def read_or_run_hybrid(item, out_path):
     reference = item["img_reference_np"]
     if out_path.exists() and not force_hybrid_run():
@@ -173,6 +216,25 @@ def read_or_run_hybrid(item, out_path):
     elapsed = time.time() - start
     save_uint8(out_path, filtered)
     return filtered, psnr, ssim, method_score, elapsed, h_used
+
+
+def warmup_anlm():
+    dummy = np.zeros((16, 16), dtype=np.float32)
+    dummy[8, 8] = 255.0
+    run_anlm_pipeline(
+        img_original=dummy,
+        h_base=100.0,
+        img_noisy=dummy,
+        f=HYBRID_CONFIG["f"],
+        t=HYBRID_CONFIG["t"],
+        mult=HYBRID_CONFIG["h_multiplier"],
+        switch_impulse_only=HYBRID_CONFIG["switch_impulse_only"],
+        reject_impulse_candidates=HYBRID_CONFIG["reject_impulse_candidates"],
+        use_aswmf_spatial_weights=HYBRID_CONFIG["use_aswmf_spatial_weights"],
+        aswmf_weight_diag_1=HYBRID_CONFIG["aswmf_weight_diag_1"],
+        aswmf_weight_diag_2=HYBRID_CONFIG["aswmf_weight_diag_2"],
+        aswmf_weight_other=HYBRID_CONFIG["aswmf_weight_other"],
+    )
 
 
 def run_level(level):
@@ -213,6 +275,14 @@ def run_level(level):
         _, psnr_hybrid, ssim_hybrid, score_hybrid, time_hybrid, h_hybrid = read_or_run_hybrid(
             item,
             output_root / "GEONLMHibrid" / file_name,
+        )
+        _, psnr_anlm, ssim_anlm, score_anlm, time_anlm, h_anlm = read_or_run_anlm(
+            item,
+            output_root / "ANLM" / file_name,
+        )
+        _, psnr_aswmf_folder, ssim_aswmf_folder, score_aswmf_folder = read_or_run_aswmf_from_folder(
+            item,
+            output_root / "ASWMF" / file_name,
         )
 
         original = original_by_file.get(file_name, {})
@@ -261,7 +331,23 @@ def run_level(level):
             "ssim_geonlm_hibrid": ssim_hybrid,
             "score_geonlm_hibrid": score_hybrid,
             "time_geonlm_hibrid": time_hybrid,
+            "anlm_f": HYBRID_CONFIG["f"],
+            "anlm_t": HYBRID_CONFIG["t"],
+            "anlm_h_multiplier": HYBRID_CONFIG["h_multiplier"],
+            "anlm_h": h_anlm,
+            "anlm_switch_impulse_only": HYBRID_CONFIG["switch_impulse_only"],
+            "anlm_reject_impulse_candidates": HYBRID_CONFIG["reject_impulse_candidates"],
+            "anlm_use_aswmf_spatial_weights": HYBRID_CONFIG["use_aswmf_spatial_weights"],
+            "psnr_anlm": psnr_anlm,
+            "ssim_anlm": ssim_anlm,
+            "score_anlm": score_anlm,
+            "time_anlm": time_anlm,
+            "psnr_aswmf": psnr_aswmf_folder if not np.isnan(psnr_aswmf_folder) else (np.nan if "psnr_aswmf" not in original else float(original["psnr_aswmf"])),
+            "ssim_aswmf": ssim_aswmf_folder if not np.isnan(ssim_aswmf_folder) else (np.nan if "ssim_aswmf" not in original else float(original["ssim_aswmf"])),
+            "score_aswmf": score_aswmf_folder if not np.isnan(score_aswmf_folder) else (np.nan if "score_aswmf" not in original else float(original["score_aswmf"])),
             "delta_score_hibrid_vs_nlm": score_hybrid - score_nlm,
+            "delta_score_anlm_vs_nlm": score_anlm - score_nlm,
+            "delta_score_hibrid_vs_anlm": score_hybrid - score_anlm,
             "delta_score_hibrid_vs_nlmedians": score_hybrid - score_nlmed,
             "psnr_gnlm_original": np.nan if "psnr_gnlm" not in original else float(original["psnr_gnlm"]),
             "ssim_gnlm_original": np.nan if "ssim_gnlm" not in original else float(original["ssim_gnlm"]),
@@ -277,6 +363,7 @@ def run_level(level):
         print(
             f"{level} {file_name}: "
             f"Hibrid={score_hybrid:.4f} "
+            f"ANLM={score_anlm:.4f} "
             f"NLMedians={score_nlmed:.4f} "
             f"dScore={record['delta_score_hibrid_vs_nlmedians']:+.4f} "
             f"time_hibrid={time_hybrid if not np.isnan(time_hybrid) else 0:.2f}s",
@@ -296,22 +383,28 @@ def make_summary(all_records, summary_dir):
             mean_ssim_nlm=("ssim_nlm", "mean"),
             mean_ssim_geonlm_hibrid=("ssim_geonlm_hibrid", "mean"),
             mean_ssim_median=("ssim_median", "mean"),
-            mean_ssim_aswmf=("ssim_aswmf_original", "mean"),
+            mean_ssim_anlm=("ssim_anlm", "mean"),
+            mean_ssim_aswmf=("ssim_aswmf", "mean"),
             mean_ssim_nlmedians=("ssim_nlmedians", "mean"),
             mean_psnr_nlm=("psnr_nlm", "mean"),
             mean_psnr_geonlm_hibrid=("psnr_geonlm_hibrid", "mean"),
             mean_psnr_median=("psnr_median", "mean"),
-            mean_psnr_aswmf=("psnr_aswmf_original", "mean"),
+            mean_psnr_anlm=("psnr_anlm", "mean"),
+            mean_psnr_aswmf=("psnr_aswmf", "mean"),
             mean_psnr_nlmedians=("psnr_nlmedians", "mean"),
             mean_score_nlm=("score_nlm", "mean"),
             mean_score_geonlm_hibrid=("score_geonlm_hibrid", "mean"),
             mean_score_median=("score_median", "mean"),
-            mean_score_aswmf=("score_aswmf_original", "mean"),
+            mean_score_anlm=("score_anlm", "mean"),
+            mean_score_aswmf=("score_aswmf", "mean"),
             mean_score_nlmedians=("score_nlmedians", "mean"),
             mean_time_geonlm_hibrid=("time_geonlm_hibrid", "mean"),
+            mean_time_anlm=("time_anlm", "mean"),
             mean_time_median=("time_median", "mean"),
             mean_time_nlmedians=("time_nlmedians", "mean"),
             wins_hibrid_vs_nlm=("delta_score_hibrid_vs_nlm", lambda s: int((s > 0).sum())),
+            wins_anlm_vs_nlm=("delta_score_anlm_vs_nlm", lambda s: int((s > 0).sum())),
+            wins_hibrid_vs_anlm=("delta_score_hibrid_vs_anlm", lambda s: int((s > 0).sum())),
             wins_hibrid_vs_nlmedians=("delta_score_hibrid_vs_nlmedians", lambda s: int((s > 0).sum())),
         )
         .reset_index()
@@ -331,14 +424,14 @@ def create_method_format_xlsx(all_records, out_path):
     wb.remove(wb.active)
     header = [
         "",
-        "s1 - NLM", "s2 - GEOHIB", "s3 - Median", "s4 - ASWMF", "s5 - NLMedian",
+        "s1 - NLM", "s2 - GEOHIB", "s3 - ANLM", "s4 - Median", "s5 - ASWMF", "s6 - NLMedian",
         "GLM x NLM", "GLM x Median", "GNLM x ASWMF", "GNLM x NlMedian",
-        "p1 - NLM", "p2 - GEOHIB", "p3 - Median", "p4 - ASWMF", "p5 - NLMedian",
+        "p1 - NLM", "p2 - GEOHIB", "p3 - ANLM", "p4 - Median", "p5 - ASWMF", "p6 - NLMedian",
         "GLM x NLM", "GLM x Median", "GNLM x ASWMF", "GNLM x NlMedian",
         "time_geonlm",
-        "nlm_score", "score_gnlm_hib", "score_median", "score_aswmf", "score_nlmedian",
+        "nlm_score", "score_gnlm_hib", "score_anlm", "score_median", "score_aswmf", "score_nlmedian",
         "GLM x NLM", "GLM x Median", "GNLM x ASWMF", "GNLM x NlMedian",
-        "nlm_h", "h_gnlm", "estimated_sigma", "image",
+        "nlm_h", "h_gnlm", "h_anlm", "estimated_sigma", "image",
     ]
     for level in LEVELS:
         rows = [row for row in all_records if row["level"] == level]
@@ -351,34 +444,38 @@ def create_method_format_xlsx(all_records, out_path):
                 None,
                 record["ssim_nlm"],
                 record["ssim_geonlm_hibrid"],
+                record["ssim_anlm"],
                 record["ssim_median"],
-                record["ssim_aswmf_original"],
+                record["ssim_aswmf"],
                 record["ssim_nlmedians"],
                 better(record["ssim_geonlm_hibrid"], record["ssim_nlm"]),
                 better(record["ssim_geonlm_hibrid"], record["ssim_median"]),
-                better(record["ssim_geonlm_hibrid"], record["ssim_aswmf_original"]),
+                better(record["ssim_geonlm_hibrid"], record["ssim_aswmf"]),
                 better(record["ssim_geonlm_hibrid"], record["ssim_nlmedians"]),
                 record["psnr_nlm"],
                 record["psnr_geonlm_hibrid"],
+                record["psnr_anlm"],
                 record["psnr_median"],
-                record["psnr_aswmf_original"],
+                record["psnr_aswmf"],
                 record["psnr_nlmedians"],
                 better(record["psnr_geonlm_hibrid"], record["psnr_nlm"]),
                 better(record["psnr_geonlm_hibrid"], record["psnr_median"]),
-                better(record["psnr_geonlm_hibrid"], record["psnr_aswmf_original"]),
+                better(record["psnr_geonlm_hibrid"], record["psnr_aswmf"]),
                 better(record["psnr_geonlm_hibrid"], record["psnr_nlmedians"]),
                 record["time_geonlm_hibrid"],
                 record["score_nlm"],
                 record["score_geonlm_hibrid"],
+                record["score_anlm"],
                 record["score_median"],
-                record["score_aswmf_original"],
+                record["score_aswmf"],
                 record["score_nlmedians"],
                 better(record["score_geonlm_hibrid"], record["score_nlm"]),
                 better(record["score_geonlm_hibrid"], record["score_median"]),
-                better(record["score_geonlm_hibrid"], record["score_aswmf_original"]),
+                better(record["score_geonlm_hibrid"], record["score_aswmf"]),
                 better(record["score_geonlm_hibrid"], record["score_nlmedians"]),
                 record["nlm_h"],
                 record["hybrid_h"],
+                record["anlm_h"],
                 record["estimated_sigma_salt_pepper"],
                 record["file_name"],
             ])
@@ -429,6 +526,7 @@ def create_pdfs(summary, out_old, out_new):
         "level",
         "mean_score_nlm",
         "mean_score_geonlm_hibrid",
+        "mean_score_anlm",
         "mean_score_median",
         "mean_score_aswmf",
         "mean_score_nlmedians",
@@ -440,6 +538,7 @@ def create_pdfs(summary, out_old, out_new):
         "level",
         "mean_score_nlm",
         "mean_score_geonlm_hibrid",
+        "mean_score_anlm",
         "mean_score_median",
         "mean_score_aswmf",
         "mean_score_nlmedians",
@@ -448,6 +547,7 @@ def create_pdfs(summary, out_old, out_new):
         "level",
         "mean_psnr_nlm",
         "mean_psnr_geonlm_hibrid",
+        "mean_psnr_anlm",
         "mean_psnr_median",
         "mean_psnr_aswmf",
         "mean_psnr_nlmedians",
@@ -456,6 +556,7 @@ def create_pdfs(summary, out_old, out_new):
         "level",
         "mean_ssim_nlm",
         "mean_ssim_geonlm_hibrid",
+        "mean_ssim_anlm",
         "mean_ssim_median",
         "mean_ssim_aswmf",
         "mean_ssim_nlmedians",
@@ -467,6 +568,7 @@ def create_pdfs(summary, out_old, out_new):
 
 
 if __name__ == "__main__":
+    warmup_anlm()
     all_records = []
     for level in selected_levels():
         all_records.extend(run_level(level))
