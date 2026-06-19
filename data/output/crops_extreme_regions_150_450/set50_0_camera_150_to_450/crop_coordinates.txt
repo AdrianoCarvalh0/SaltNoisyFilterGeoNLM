@@ -1,0 +1,9 @@
+source_file=0.png
+crop_x=250
+crop_y=195
+crop_width=150
+crop_height=150
+expanded_width=450
+expanded_height=450
+resampling=LANCZOS
+methods=reference,noisy,NLM,GNLM,GHNLM,IANLM,Median,ASWMF,NLMedian

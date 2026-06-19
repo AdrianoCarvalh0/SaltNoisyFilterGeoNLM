@@ -1,0 +1,6 @@
+source_file=0.png
+crop_x=285
+crop_y=230
+crop_width=80
+crop_height=80
+methods=reference,noisy,NLM,GNLM,GHNLM,IANLM,Median,ASWMF,NLMedian
