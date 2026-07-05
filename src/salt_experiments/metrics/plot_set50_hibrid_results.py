@@ -11,10 +11,16 @@ import numpy as np
 import pandas as pd
 
 
-SUMMARY_DIR = Path("/workspace/data/output/set50Hibrid/summary")
-INPUT_ALL = SUMMARY_DIR / "results_set50_hibrid_all.xlsx"
-INPUT_SUMMARY = SUMMARY_DIR / "results_set50_hibrid_summary.xlsx"
-OUTPUT_DIR = SUMMARY_DIR / "graphs"
+DATASETS = {
+    "set12": {
+        "label": "Set12",
+        "summary_dir": Path("/workspace/data/output/set12Hibrid/summary"),
+    },
+    "set50": {
+        "label": "Set50",
+        "summary_dir": Path("/workspace/data/output/set50Hibrid/summary"),
+    },
+}
 
 LEVEL_ORDER = ["low", "moderate", "medium", "high", "extreme"]
 LEVEL_LABELS = {
@@ -34,10 +40,38 @@ METHODS = [
         "linestyle": "-",
     },
     {
+        "label": "GNLM",
+        "key": "gnlm_original",
+        "color": "#2ca02c",
+        "marker": "o",
+        "linestyle": "-",
+    },
+    {
+        "label": "GHNLM",
+        "key": "geonlm_hibrid",
+        "color": "#7f7f7f",
+        "marker": "*",
+        "linestyle": "-",
+    },
+    {
+        "label": "IANLM",
+        "key": "anlm",
+        "color": "#d62728",
+        "marker": "P",
+        "linestyle": "-",
+    },
+    {
         "label": "Median",
         "key": "median",
         "color": "#9467bd",
         "marker": "D",
+        "linestyle": "-",
+    },
+    {
+        "label": "ASWMF",
+        "key": "aswmf",
+        "color": "#8c564b",
+        "marker": "^",
         "linestyle": "-",
     },
     {
@@ -47,20 +81,16 @@ METHODS = [
         "marker": "v",
         "linestyle": "-",
     },
-    {
-        "label": "GHNLM",
-        "key": "geonlm_hibrid",
-        "color": "#d62728",
-        "marker": "*",
-        "linestyle": "-",
-    },
 ]
 
 SUMMARY_METHODS = [
     ("NLM", "nlm", "#0099c8"),
+    ("GNLM", "gnlm_original", "#2ca02c"),
+    ("GHNLM", "geonlm_hibrid", "#7f7f7f"),
+    ("IANLM", "anlm", "#d62728"),
     ("Median", "median", "#9467bd"),
+    ("ASWMF", "aswmf", "#8c564b"),
     ("NLMedians", "nlmedians", "#ff7f0e"),
-    ("GHNLM", "geonlm_hibrid", "#d62728"),
 ]
 
 
@@ -113,14 +143,16 @@ def set_metric_axis(ax, values, metric):
         ymin = max(0.0, min_value - margin)
         ymax = min(1.02, max_value + margin)
         ax.set_ylim(ymin, ymax)
+        ax.yaxis.set_major_locator(ticker.MaxNLocator(nbins=12))
         ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.2f"))
     else:
         margin = max(2.0, data_range * 0.12)
         ax.set_ylim(min_value - margin, max_value + margin)
+        ax.yaxis.set_major_locator(ticker.MaxNLocator(nbins=12))
         ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.1f"))
 
 
-def plot_level_metric(df, level, metric, sorted_values=False):
+def plot_level_metric(df, level, metric, output_dir, sorted_values=False):
     level_df = df[df["level"] == level].copy()
     level_df = level_df.sort_values("file_name", key=lambda col: col.map(natural_sort_key))
     methods = available_methods(level_df, metric)
@@ -146,21 +178,21 @@ def plot_level_metric(df, level, metric, sorted_values=False):
     ax.set_xlabel("Image Index")
     ax.set_ylabel(metric.upper())
     set_metric_axis(ax, all_values, metric)
-    ax.grid(False)
-    ax.legend(loc="best", frameon=False, ncol=2)
+    ax.grid(axis="y", linestyle=":", linewidth=0.7, alpha=0.45)
+    ax.legend(loc="best", frameon=False, ncol=3)
     fig.tight_layout()
 
     suffix = "sorted" if sorted_values else "no_sorted"
-    output = OUTPUT_DIR / f"graph_{metric}_{level}_{suffix}.pdf"
+    output = output_dir / f"graph_{metric}_{level}_{suffix}.pdf"
     fig.savefig(output, dpi=600, bbox_inches="tight", transparent=True)
     plt.close(fig)
     return output
 
 
-def plot_summary_bars(summary_df, metric):
+def plot_summary_bars(summary_df, metric, output_dir):
     summary_df = summary_df.set_index("level").loc[LEVEL_ORDER].reset_index()
     x = np.arange(len(summary_df))
-    width = 0.15
+    width = 0.11
 
     fig, ax = plt.subplots(figsize=(18, 10))
     for offset, (label, key, color) in enumerate(SUMMARY_METHODS):
@@ -168,7 +200,7 @@ def plot_summary_bars(summary_df, metric):
         if column not in summary_df.columns:
             continue
         ax.bar(
-            x + (offset - 2) * width,
+            x + (offset - (len(SUMMARY_METHODS) - 1) / 2) * width,
             summary_df[column],
             width,
             label=label,
@@ -179,17 +211,18 @@ def plot_summary_bars(summary_df, metric):
     ax.set_ylabel(f"Mean {metric.upper()}")
     ax.set_xticks(x)
     ax.set_xticklabels([LEVEL_LABELS[level] for level in summary_df["level"]], rotation=15)
-    ax.legend(loc="best", frameon=False, ncol=2)
-    ax.grid(False)
+    ax.yaxis.set_major_locator(ticker.MaxNLocator(nbins=12))
+    ax.legend(loc="best", frameon=False, ncol=4)
+    ax.grid(axis="y", linestyle=":", linewidth=0.7, alpha=0.45)
     fig.tight_layout()
 
-    output = OUTPUT_DIR / f"summary_mean_{metric}.pdf"
+    output = output_dir / f"summary_mean_{metric}.pdf"
     fig.savefig(output, dpi=600, bbox_inches="tight", transparent=True)
     plt.close(fig)
     return output
 
 
-def plot_hybrid_wins(summary_df):
+def plot_hybrid_wins(summary_df, output_dir):
     summary_df = summary_df.set_index("level").loc[LEVEL_ORDER].reset_index()
     x = np.arange(len(summary_df))
     width = 0.24
@@ -214,32 +247,42 @@ def plot_hybrid_wins(summary_df):
     ax.grid(False)
     fig.tight_layout()
 
-    output = OUTPUT_DIR / "summary_hybrid_wins.pdf"
+    output = output_dir / "summary_hybrid_wins.pdf"
     fig.savefig(output, dpi=600, bbox_inches="tight", transparent=True)
     plt.close(fig)
     return output
 
 
-def main():
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+def plot_dataset(dataset_name, config):
+    summary_dir = config["summary_dir"]
+    output_dir = summary_dir / "graphs"
+    input_all = summary_dir / f"results_{dataset_name}_hibrid_all.xlsx"
+    input_summary = summary_dir / f"results_{dataset_name}_hibrid_summary.xlsx"
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    df = pd.read_excel(INPUT_ALL)
-    summary_df = pd.read_excel(INPUT_SUMMARY)
+    df = pd.read_excel(input_all)
+    summary_df = pd.read_excel(input_summary)
     levels = [level for level in LEVEL_ORDER if level in set(df["level"])]
 
     outputs = []
     for level in levels:
         for metric in ["psnr", "ssim"]:
-            outputs.append(plot_level_metric(df, level, metric, sorted_values=False))
-            outputs.append(plot_level_metric(df, level, metric, sorted_values=True))
+            outputs.append(plot_level_metric(df, level, metric, output_dir, sorted_values=False))
+            outputs.append(plot_level_metric(df, level, metric, output_dir, sorted_values=True))
 
     for metric in ["psnr", "ssim", "score"]:
-        outputs.append(plot_summary_bars(summary_df, metric))
-    outputs.append(plot_hybrid_wins(summary_df))
+        outputs.append(plot_summary_bars(summary_df, metric, output_dir))
+    if "wins_hibrid_vs_median" in summary_df.columns:
+        outputs.append(plot_hybrid_wins(summary_df, output_dir))
 
-    print(f"Generated {len(outputs)} graphs in {OUTPUT_DIR}")
+    print(f"Generated {len(outputs)} {config['label']} graphs in {output_dir}")
     for output in outputs:
         print(output)
+
+
+def main():
+    for dataset_name, config in DATASETS.items():
+        plot_dataset(dataset_name, config)
 
 
 if __name__ == "__main__":

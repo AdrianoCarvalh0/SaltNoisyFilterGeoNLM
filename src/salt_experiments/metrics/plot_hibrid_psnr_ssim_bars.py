@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 
-LEVEL_ORDER = ["low", "medium", "moderate", "high", "extreme"]
+LEVEL_ORDER = ["low", "moderate", "medium", "high", "extreme"]
 LEVEL_LABELS = {
     "low": "Low",
     "medium": "Medium",
@@ -16,9 +16,9 @@ LEVEL_LABELS = {
 
 METHODS = [
     ("NLM", "nlm", "#4C78A8"),
-    ("GNLM", "gnlm", "#F58518"),
-    ("GHNLM", "geonlm_hibrid", "#E45756"),
-    ("ANLM", "aswmf_nlm_h001", "#54A24B"),
+    ("GNLM", "gnlm_original", "#F58518"),
+    ("GHNLM", "geonlm_hibrid", "#7F7F7F"),
+    ("IANLM", "anlm", "#D62728"),
     ("Median", "median", "#B279A2"),
     ("ASWMF", "aswmf", "#72B7B2"),
     ("NLMedian", "nlmedians", "#9D755D"),
@@ -27,14 +27,15 @@ METHODS = [
 
 def ordered_summary(path):
     df = pd.read_excel(path)
-    df["level"] = pd.Categorical(df["level"], categories=LEVEL_ORDER, ordered=True)
-    return df.sort_values("level").reset_index(drop=True)
+    summary = df.groupby("level", as_index=False).mean(numeric_only=True)
+    summary["level"] = pd.Categorical(summary["level"], categories=LEVEL_ORDER, ordered=True)
+    return summary.sort_values("level").reset_index(drop=True)
 
 
 def metric_table(summary, metric):
     data = []
     for label, key, color in METHODS:
-        column = f"mean_{metric}_{key}"
+        column = f"{metric}_{key}"
         if column in summary.columns:
             data.append((label, color, summary[column].to_numpy(dtype=float)))
     return data
@@ -50,7 +51,7 @@ def plot_metric(summary, dataset_label, metric, output_dir):
     offsets = (np.arange(len(methods)) - (len(methods) - 1) / 2) * width
 
     for offset, (method_label, color, values) in zip(offsets, methods):
-        bars = ax.bar(
+        ax.bar(
             x + offset,
             values,
             width,
@@ -59,28 +60,20 @@ def plot_metric(summary, dataset_label, metric, output_dir):
             edgecolor="white",
             linewidth=0.5,
         )
-        for bar, value in zip(bars, values):
-            if np.isfinite(value):
-                ax.text(
-                    bar.get_x() + bar.get_width() / 2,
-                    bar.get_height(),
-                    f"{value:.2f}" if metric == "psnr" else f"{value:.3f}",
-                    ha="center",
-                    va="bottom",
-                    fontsize=7,
-                    rotation=90,
-                    color="#222222",
-                )
 
-    ylabel = "PSNR (dB)" if metric == "psnr" else "SSIM"
-    title_metric = "PSNR" if metric == "psnr" else "SSIM"
-    ax.set_title(f"{dataset_label} - {title_metric} by Noise Level", fontsize=15, fontweight="bold")
-    ax.set_ylabel(ylabel, fontsize=12)
-    ax.set_xlabel("Salt-and-pepper noise level", fontsize=12)
     ax.set_xticks(x)
-    ax.set_xticklabels(labels)
+    ax.set_xticklabels(labels, fontsize=15)
+    ax.tick_params(axis="y", labelsize=15)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
     ax.grid(axis="y", linestyle="--", linewidth=0.6, alpha=0.35)
-    ax.legend(ncol=7, loc="upper center", bbox_to_anchor=(0.5, -0.12), frameon=False)
+    ax.legend(
+        ncol=7,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.08),
+        frameon=False,
+        fontsize=15,
+    )
 
     if metric == "ssim":
         ax.set_ylim(0, min(1.08, max(1.02, np.nanmax([values for _, _, values in methods]) + 0.06)))
@@ -98,7 +91,7 @@ def plot_metric(summary, dataset_label, metric, output_dir):
 
 def plot_dataset(dataset_name, dataset_label):
     summary_dir = Path(f"/workspace/data/output/{dataset_name}Hibrid/summary")
-    summary_path = summary_dir / f"results_{dataset_name}_hibrid_summary.xlsx"
+    summary_path = summary_dir / f"results_{dataset_name}_hibrid_all.xlsx"
     output_dir = summary_dir / "graphs"
     output_dir.mkdir(parents=True, exist_ok=True)
 
