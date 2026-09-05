@@ -83,6 +83,7 @@ def _aswmf_local_fallback_numba(
     weight_diag_1,
     weight_diag_2,
     weight_other,
+    impulse_tolerance,
 ):
     weighted_sum = 0.0
     weight_sum = 0.0
@@ -94,7 +95,7 @@ def _aswmf_local_fallback_numba(
             value = img_n[im + di, jn + dj]
             fallback_sum += value
             fallback_count += 1
-            if value == 0.0 or value == 255.0:
+            if value <= impulse_tolerance or value >= 255.0 - impulse_tolerance:
                 continue
 
             weight = _aswmf_spatial_weight_numba(
@@ -125,18 +126,22 @@ def _switch_anlm_numba(
     aswmf_weight_diag_1,
     aswmf_weight_diag_2,
     aswmf_weight_other,
+    impulse_tolerance,
 ):
     m = img_n.shape[0] - 2 * f
     n = img_n.shape[1] - 2 * f
     filtered = img_n[f:f + m, f:f + n].copy()
+    processed_count = 0
+    fallback_count = 0
 
     for i in range(m):
         for j in range(n):
             im = i + f
             jn = j + f
             center_value = img_n[im, jn]
-            if center_value != 0.0 and center_value != 255.0:
+            if center_value > impulse_tolerance and center_value < 255.0 - impulse_tolerance:
                 continue
+            processed_count += 1
 
             rmin = max(im - t, f)
             rmax = min(im + t, m + f)
@@ -150,7 +155,8 @@ def _switch_anlm_numba(
                 for s in range(smin, smax):
                     candidate_center = img_n[r, s]
                     if reject_impulse_candidates and (
-                        candidate_center == 0.0 or candidate_center == 255.0
+                        candidate_center <= impulse_tolerance
+                        or candidate_center >= 255.0 - impulse_tolerance
                     ):
                         continue
 
@@ -183,6 +189,7 @@ def _switch_anlm_numba(
                     weight_sum += similarity_weight
 
             if weight_sum <= 0.0:
+                fallback_count += 1
                 filtered[i, j] = _aswmf_local_fallback_numba(
                     img_n,
                     im,
@@ -191,11 +198,12 @@ def _switch_anlm_numba(
                     aswmf_weight_diag_1,
                     aswmf_weight_diag_2,
                     aswmf_weight_other,
+                    impulse_tolerance,
                 )
             else:
                 filtered[i, j] = weighted_sum / weight_sum
 
-    return filtered
+    return filtered, processed_count, fallback_count
 
 
 def process_pixel_anlm(
@@ -215,6 +223,7 @@ def process_pixel_anlm(
     aswmf_weight_diag_1=1.0,
     aswmf_weight_diag_2=1.0,
     aswmf_weight_other=10.0,
+    impulse_tolerance=0,
 ):
     """Adaptive NLM counterpart to GHNLM, using direct Euclidean patch distance.
 
@@ -228,7 +237,10 @@ def process_pixel_anlm(
     jn = j + f
     center_value = img_n[im, jn]
 
-    if switch_impulse_only and center_value != 0.0 and center_value != 255.0:
+    if switch_impulse_only and (
+        center_value > impulse_tolerance
+        and center_value < 255.0 - impulse_tolerance
+    ):
         return center_value
 
     central_patch = img_n[im - f:im + f + 1, jn - f:jn + f + 1]
@@ -247,7 +259,8 @@ def process_pixel_anlm(
             candidate_center = img_n[r, s]
 
             if reject_impulse_candidates and (
-                candidate_center == 0.0 or candidate_center == 255.0
+                candidate_center <= impulse_tolerance
+                or candidate_center >= 255.0 - impulse_tolerance
             ):
                 continue
 
@@ -281,6 +294,7 @@ def process_pixel_anlm(
             weight_diag_1=aswmf_weight_diag_1,
             weight_diag_2=aswmf_weight_diag_2,
             weight_other=aswmf_weight_other,
+            impulse_tolerance=impulse_tolerance,
         )
     return weighted_sum / weight_sum
 
@@ -299,6 +313,7 @@ def Parallel_ANLM(
     aswmf_weight_diag_2=1.0,
     aswmf_weight_other=10.0,
     n_jobs=-1,
+    impulse_tolerance=0,
 ):
     m = img_n.shape[0] - 2 * f
     n = img_n.shape[1] - 2 * f
@@ -320,6 +335,7 @@ def Parallel_ANLM(
             aswmf_weight_diag_1,
             aswmf_weight_diag_2,
             aswmf_weight_other,
+            impulse_tolerance,
         )
         for i in range(m)
         for j in range(n)
@@ -340,8 +356,10 @@ def Parallel_Switch_ANLM(
     aswmf_weight_diag_2=1.0,
     aswmf_weight_other=10.0,
     n_jobs=-1,
+    impulse_tolerance=0,
+    return_stats=False,
 ):
-    return _switch_anlm_numba(
+    filtered, processed_count, fallback_count = _switch_anlm_numba(
         img_n.astype(np.float32),
         f,
         t,
@@ -353,7 +371,18 @@ def Parallel_Switch_ANLM(
         aswmf_weight_diag_1,
         aswmf_weight_diag_2,
         aswmf_weight_other,
+        impulse_tolerance,
     )
+    if return_stats:
+        return filtered, {
+            "processed_pixels": int(processed_count),
+            "fallback_pixels": int(fallback_count),
+            "nonlocal_pixels": int(processed_count - fallback_count),
+            "fallback_fraction": (
+                float(fallback_count) / processed_count if processed_count else 0.0
+            ),
+        }
+    return filtered
 
 
 def Parallel_Switch_ANLM_python(
@@ -369,6 +398,7 @@ def Parallel_Switch_ANLM_python(
     aswmf_weight_diag_2=1.0,
     aswmf_weight_other=10.0,
     n_jobs=-1,
+    impulse_tolerance=0,
 ):
     m = img_n.shape[0] - 2 * f
     n = img_n.shape[1] - 2 * f
@@ -377,7 +407,10 @@ def Parallel_Switch_ANLM_python(
         (i, j)
         for i in range(m)
         for j in range(n)
-        if filtered[i, j] == 0.0 or filtered[i, j] == 255.0
+        if (
+            filtered[i, j] <= impulse_tolerance
+            or filtered[i, j] >= 255.0 - impulse_tolerance
+        )
     ]
 
     values = Parallel(n_jobs=n_jobs)(
@@ -398,6 +431,7 @@ def Parallel_Switch_ANLM_python(
             aswmf_weight_diag_1,
             aswmf_weight_diag_2,
             aswmf_weight_other,
+            impulse_tolerance,
         )
         for i, j in impulse_coords
     )
@@ -424,6 +458,7 @@ def run_anlm_pipeline(
     aswmf_weight_diag_2=1.0,
     aswmf_weight_other=10.0,
     n_jobs=-1,
+    impulse_tolerance=0,
 ):
     img_noisy_mirror = mirror_cpu(img_noisy.astype(np.float32), f)
     h_anlm = float(h_base) * float(mult)
@@ -442,6 +477,7 @@ def run_anlm_pipeline(
             aswmf_weight_diag_2=aswmf_weight_diag_2,
             aswmf_weight_other=aswmf_weight_other,
             n_jobs=n_jobs,
+            impulse_tolerance=impulse_tolerance,
         )
     else:
         img_filtered = Parallel_ANLM(
@@ -458,6 +494,7 @@ def run_anlm_pipeline(
             aswmf_weight_diag_2=aswmf_weight_diag_2,
             aswmf_weight_other=aswmf_weight_other,
             n_jobs=n_jobs,
+            impulse_tolerance=impulse_tolerance,
         )
 
     img_filtered = np.clip(img_filtered, 0, 255).astype(np.uint8)

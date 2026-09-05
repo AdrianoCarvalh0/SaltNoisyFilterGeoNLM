@@ -3,12 +3,20 @@ from numba import njit
 
 
 @njit
-def aswmf_filter(image, radius=3, weight_diag_1=1.0, weight_diag_2=1.0, weight_other=10.0):
+def aswmf_filter(
+    image,
+    radius=3,
+    weight_diag_1=1.0,
+    weight_diag_2=1.0,
+    weight_other=10.0,
+    impulse_tolerance=0,
+):
     """
     Adaptive Switching Weight Mean Filter for salt-and-pepper noise.
 
     The default radius=3 follows the ASWMF paper's 7x7 window. Pixels with
-    values 0 or 255 are treated as salt-and-pepper candidates.
+    Values in 0..impulse_tolerance and
+    255-impulse_tolerance..255 are treated as impulse candidates.
     """
     height, width = image.shape
     output = image.copy()
@@ -67,7 +75,10 @@ def aswmf_filter(image, radius=3, weight_diag_1=1.0, weight_diag_2=1.0, weight_o
                     fallback_sum += value
                     fallback_count += 1
 
-                    if value == 0.0 or value == 255.0:
+                    if (
+                        value <= impulse_tolerance
+                        or value >= 255.0 - impulse_tolerance
+                    ):
                         continue
 
                     if di == dj:

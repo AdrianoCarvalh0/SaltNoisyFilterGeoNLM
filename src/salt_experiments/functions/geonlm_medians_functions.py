@@ -43,6 +43,7 @@ def _aswmf_local_fallback(
     weight_diag_1=1.0,
     weight_diag_2=1.0,
     weight_other=10.0,
+    impulse_tolerance=0,
 ):
     weighted_sum = 0.0
     weight_sum = 0.0
@@ -55,7 +56,7 @@ def _aswmf_local_fallback(
             fallback_sum += value
             fallback_count += 1
 
-            if value == 0.0 or value == 255.0:
+            if value <= impulse_tolerance or value >= 255.0 - impulse_tolerance:
                 continue
 
             weight = _aswmf_spatial_weight(
@@ -91,12 +92,16 @@ def process_pixel_geonlm_medians(
     aswmf_weight_diag_1=1.0,
     aswmf_weight_diag_2=1.0,
     aswmf_weight_other=10.0,
+    impulse_tolerance=0,
 ):
     im = i + f
     jn = j + f
     center_value = img_n[im, jn]
 
-    if switch_impulse_only and center_value != 0.0 and center_value != 255.0:
+    if switch_impulse_only and (
+        center_value > impulse_tolerance
+        and center_value < 255.0 - impulse_tolerance
+    ):
         return center_value
 
     patch_central = img_n[im - f:im + f + 1, jn - f:jn + f + 1]
@@ -130,7 +135,8 @@ def process_pixel_geonlm_medians(
                 outlier_pixel_alpha=outlier_pixel_alpha,
             )
             if reject_impulse_candidates and (
-                candidate_center == 0.0 or candidate_center == 255.0
+                candidate_center <= impulse_tolerance
+                or candidate_center >= 255.0 - impulse_tolerance
             ):
                 valid_candidates[k] = False
             if use_aswmf_spatial_weights:
@@ -175,6 +181,7 @@ def process_pixel_geonlm_medians(
             weight_diag_1=aswmf_weight_diag_1,
             weight_diag_2=aswmf_weight_diag_2,
             weight_other=aswmf_weight_other,
+            impulse_tolerance=impulse_tolerance,
         )
     return np.sum(similarity_weights * pixels) / z_value
 
@@ -194,6 +201,7 @@ def Parallel_GEONLMedians(
     aswmf_weight_diag_2=1.0,
     aswmf_weight_other=10.0,
     n_jobs=-1,
+    impulse_tolerance=0,
 ):
     m = img_n.shape[0] - 2 * f
     n = img_n.shape[1] - 2 * f
@@ -216,6 +224,7 @@ def Parallel_GEONLMedians(
             aswmf_weight_diag_1,
             aswmf_weight_diag_2,
             aswmf_weight_other,
+            impulse_tolerance,
         )
         for i in range(m)
         for j in range(n)
@@ -237,6 +246,7 @@ def Parallel_Switch_GEONLMedians(
     aswmf_weight_diag_2=1.0,
     aswmf_weight_other=10.0,
     n_jobs=-1,
+    impulse_tolerance=0,
 ):
     m = img_n.shape[0] - 2 * f
     n = img_n.shape[1] - 2 * f
@@ -245,7 +255,10 @@ def Parallel_Switch_GEONLMedians(
         (i, j)
         for i in range(m)
         for j in range(n)
-        if filtered[i, j] == 0.0 or filtered[i, j] == 255.0
+        if (
+            filtered[i, j] <= impulse_tolerance
+            or filtered[i, j] >= 255.0 - impulse_tolerance
+        )
     ]
 
     values = Parallel(n_jobs=n_jobs)(
@@ -267,6 +280,7 @@ def Parallel_Switch_GEONLMedians(
             aswmf_weight_diag_1,
             aswmf_weight_diag_2,
             aswmf_weight_other,
+            impulse_tolerance,
         )
         for i, j in impulse_coords
     )
@@ -294,6 +308,7 @@ def run_geonlm_medians_pipeline(
     aswmf_weight_diag_2=1.0,
     aswmf_weight_other=10.0,
     n_jobs=-1,
+    impulse_tolerance=0,
 ):
     img_noisy_mirror = mirror_cpu(img_noisy.astype(np.float32), f)
     h_geonlm_medians = float(h_base) * float(mult)
@@ -313,6 +328,7 @@ def run_geonlm_medians_pipeline(
             aswmf_weight_diag_2=aswmf_weight_diag_2,
             aswmf_weight_other=aswmf_weight_other,
             n_jobs=n_jobs,
+            impulse_tolerance=impulse_tolerance,
         )
     else:
         img_filtered = Parallel_GEONLMedians(
@@ -330,6 +346,7 @@ def run_geonlm_medians_pipeline(
             aswmf_weight_diag_2=aswmf_weight_diag_2,
             aswmf_weight_other=aswmf_weight_other,
             n_jobs=n_jobs,
+            impulse_tolerance=impulse_tolerance,
         )
     img_filtered = np.clip(img_filtered, 0, 255).astype(np.uint8)
     img_ref = np.clip(img_original, 0, 255).astype(np.uint8)
