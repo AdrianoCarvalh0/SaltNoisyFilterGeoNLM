@@ -1,0 +1,12 @@
+{
+  "previous_supervisor_pid": 28894,
+  "supervisor_pid": 56591,
+  "cpu_workers": 8,
+  "numba_threads": 8,
+  "nlm_backend": "CUDA",
+  "previous_records_default_workers": 6,
+  "source_hashes": {
+    "src/salt_experiments/unified_comparison/run.py": "be579275e6466fc594f3c6f757ddcac9d99bbad085870d77e2cb208dbfaa73db",
+    "src/salt_experiments/unified_comparison/run_sequence.py": "cc65cafc34d1c75454073108c3e9b221ccea363f8843131214100128ed6405d8"
+  }
+}

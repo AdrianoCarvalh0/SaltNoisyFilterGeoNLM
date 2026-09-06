@@ -1,0 +1,24 @@
+{
+  "dataset": "set12",
+  "level": "medium",
+  "file_name": "03.png",
+  "tolerance": 4,
+  "density": 0.05,
+  "shape": [
+    512,
+    512
+  ],
+  "reference_sha256": "ecaf4e62d02b750095b71c0828247049848c285190975276e63ef6d951b37cf4",
+  "noisy_sha256": "76e43ccb10d0fd50514c324d9319b070e705fa6c949ead13598cc60431e1acd1",
+  "method": "ianlm",
+  "h": 1.0,
+  "h_source": "fixed_independent",
+  "processed_pixels": 15159,
+  "fallback_pixels": 13880,
+  "nonlocal_pixels": 1279,
+  "fallback_fraction": 0.9156276799261165,
+  "psnr": 40.40349003966548,
+  "ssim": 0.9982442747434757,
+  "score": 70.11395875700653,
+  "time_filter_call_s": 0.15830940600062604
+}

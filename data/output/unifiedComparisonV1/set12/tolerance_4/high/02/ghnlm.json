@@ -1,0 +1,20 @@
+{
+  "dataset": "set12",
+  "level": "high",
+  "file_name": "02.png",
+  "tolerance": 4,
+  "density": 0.1,
+  "shape": [
+    512,
+    512
+  ],
+  "reference_sha256": "9a0925d4efea52b4b8355baab41b735118c594bada85c1650a8c929d4bedd645",
+  "noisy_sha256": "fb5756b2f1977a53d6af3dcead4efb66402b9d5e985cdbdec56b32e00ffd97a7",
+  "method": "ghnlm",
+  "h": 1.0,
+  "h_source": "fixed_independent",
+  "psnr": 53.39787449268094,
+  "ssim": 0.9986329024741964,
+  "score": 76.63058237005029,
+  "time_filter_call_s": 17.49743396300073
+}

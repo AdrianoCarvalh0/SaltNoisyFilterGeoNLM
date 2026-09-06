@@ -1,0 +1,18 @@
+{
+  "dataset": "set12",
+  "level": "high",
+  "file_name": "03.png",
+  "tolerance": 0,
+  "density": 0.1,
+  "shape": [
+    512,
+    512
+  ],
+  "reference_sha256": "ecaf4e62d02b750095b71c0828247049848c285190975276e63ef6d951b37cf4",
+  "noisy_sha256": "4b3536cd26cb2a06a9257208afef360b062fd3e9ee7285ba6d4c75c0e03474d9",
+  "method": "aswmf",
+  "psnr": 31.610494666906767,
+  "ssim": 0.9879268852836779,
+  "score": 65.20159159763728,
+  "time_filter_call_s": 0.01891293300104735
+}

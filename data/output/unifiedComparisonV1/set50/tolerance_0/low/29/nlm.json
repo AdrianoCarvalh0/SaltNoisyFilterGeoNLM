@@ -1,0 +1,23 @@
+{
+  "dataset": "set50",
+  "level": "low",
+  "file_name": "29.gif",
+  "tolerance": 0,
+  "density": 0.01,
+  "shape": [
+    512,
+    512
+  ],
+  "reference_sha256": "1eeb76c0386fbcd563a08eb25bbeffde427bdc62658e4bcc02c8aafbf733f219",
+  "noisy_sha256": "344bd3e7159aeb387f857c93bd519dbbefe06fcd40fc9b623eb0f0cfe1416ba9",
+  "method": "nlm",
+  "h": 154.0,
+  "psnr": 24.897778621031463,
+  "ssim": 0.6764716966095229,
+  "score": 46.272474140991875,
+  "sigma": 13.194033699084835,
+  "h_source": "current_noise_full_reference_sweep",
+  "h_at_grid_boundary": true,
+  "time_calibration_s": 16.41348371099957,
+  "time_filter_call_s": 0.017977528999836068
+}

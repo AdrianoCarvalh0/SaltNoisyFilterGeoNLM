@@ -1,0 +1,13 @@
+{
+  "dataset": "set50",
+  "level": "medium",
+  "file_name": "46.gif",
+  "tolerance": 0,
+  "density": 0.05,
+  "shape": [
+    512,
+    512
+  ],
+  "reference_sha256": "14cdebcd7b2b9e534cc9717933df6ccb4861289237cde90700810e2e6e2e245f",
+  "noisy_sha256": "d878c43c275cd0166300fe04d75a53c09d3d75d67cb3d908e5882e20a295ecc9"
+}

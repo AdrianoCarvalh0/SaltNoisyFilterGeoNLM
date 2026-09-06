@@ -1,0 +1,18 @@
+{
+  "dataset": "set50",
+  "level": "moderate",
+  "file_name": "12.gif",
+  "tolerance": 0,
+  "density": 0.03,
+  "shape": [
+    512,
+    512
+  ],
+  "reference_sha256": "3c3ec23125fea9974f2e94c0d93a534edf2ec60d33b6af79f9a60fef58295de4",
+  "noisy_sha256": "a88e463713c8906dc55b4636147c4434d127d68a71e2e4d94601b4da5b09fa9e",
+  "method": "aswmf",
+  "psnr": 32.956639912107924,
+  "ssim": 0.9533296625213226,
+  "score": 64.14480308212009,
+  "time_filter_call_s": 0.017284409999774653
+}

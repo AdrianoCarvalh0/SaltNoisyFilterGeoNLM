@@ -1,0 +1,13 @@
+{
+  "dataset": "set12",
+  "level": "moderate",
+  "file_name": "11.png",
+  "tolerance": 4,
+  "density": 0.03,
+  "shape": [
+    512,
+    512
+  ],
+  "reference_sha256": "17b452cc44e876adc0d3fd3607e8c9ab9e04406fa1702d436005e99db30c6108",
+  "noisy_sha256": "4f6af6012acab1aca32e1626772dece3f447b16d814b44a65374637178964709"
+}
