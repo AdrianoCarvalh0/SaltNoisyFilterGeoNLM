@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "seed": 42,
+  "tolerances": [
+    0,
+    4
+  ],
+  "nlm": {
+    "f": 1,
+    "t": 3,
+    "offsets_by_density": {
+      "low": [
+        -120,
+        120
+      ],
+      "moderate": [
+        10,
+        170
+      ],
+      "medium": [
+        40,
+        170
+      ],
+      "high": [
+        100,
+        280
+      ],
+      "extreme": [
+        250,
+        600
+      ]
+    },
+    "selection": "maximize 0.5*PSNR + 50*SSIM; uint8; smallest h on ties"
+  },
+  "ianlm": {
+    "f": 1,
+    "t": 3,
+    "h": 1.0
+  },
+  "ghnlm": {
+    "f": 1,
+    "t": 3,
+    "h": 1.0,
+    "k": 7
+  },
+  "gnlm": {
+    "f": 1,
+    "t": 3,
+    "k": 7,
+    "h": "h_nlm*(1.40 if h_nlm<60 or sigma<10 else 1.55)"
+  },
+  "nlmedians": {
+    "f": 2,
+    "t": 3,
+    "h_multiplier": 0.005
+  },
+  "aswmf": {
+    "radius": 3,
+    "same_tolerance_as_ianlm": true
+  },
+  "median": {
+    "size": 3,
+    "mode": "reflect"
+  },
+  "spatial_weights": [
+    1.0,
+    1.0,
+    10.0
+  ],
+  "z_alpha": 1.96,
+  "outlier_alpha": 0.0,
+  "noise": "paired_scaled_uniform_v1; sample without replacement",
+  "metrics": "clip to [0,255], cast uint8, data_range=255"
+}

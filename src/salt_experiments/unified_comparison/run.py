@@ -40,11 +40,13 @@ LEVELS = {'low': .01, 'moderate': .03, 'medium': .05, 'high': .10, 'extreme': .2
 METHODS = ('nlm', 'ianlm', 'median', 'aswmf', 'nlmedians', 'ghnlm', 'gnlm')
 PROTOCOL = {
     'version': 1, 'seed': 42, 'tolerances': [0, 4],
-    'nlm': {'f': 4, 't': 7, 'offsets_inclusive': [25, 499],
+    'nlm': {'f': 1, 't': 3, 'offsets_by_density': {
+        'low': [-120, 120], 'moderate': [10, 170], 'medium': [40, 170],
+        'high': [100, 280], 'extreme': [250, 600]},
             'selection': 'maximize 0.5*PSNR + 50*SSIM; uint8; smallest h on ties'},
     'ianlm': {'f': 1, 't': 3, 'h': 1.0},
     'ghnlm': {'f': 1, 't': 3, 'h': 1.0, 'k': 7},
-    'gnlm': {'f': 4, 't': 7, 'k': 10,
+    'gnlm': {'f': 1, 't': 3, 'k': 7,
              'h': 'h_nlm*(1.40 if h_nlm<60 or sigma<10 else 1.55)'},
     'nlmedians': {'f': 2, 't': 3, 'h_multiplier': .005},
     'aswmf': {'radius': 3, 'same_tolerance_as_ianlm': True},
@@ -80,18 +82,20 @@ def digest(array):
 
 
 def nlm_filter(noisy, h):
-    out = NLM_fast_cuda_global(cp.asarray(noisy), h=float(h), f=4, t=7)
+    out = NLM_fast_cuda_global(cp.asarray(noisy), h=float(h), f=1, t=3)
     cp.cuda.Stream.null.synchronize()
     return cp.asnumpy(out)
 
 
-def calibrate(reference, noisy, destination):
+def calibrate(reference, noisy, destination, level):
     sigma = float(estimate_sigma(noisy))
     base = float(compute_adaptive_q(sigma))
     rows, best, best_out = [], None, None
     start = time.perf_counter()
-    for offset in range(25, 500):
-        h = base + offset
+    lo, hi = PROTOCOL['nlm']['offsets_by_density'][level]
+    sigma_base = int(base)
+    for offset in range(lo, hi + 1):
+        h = max(1, sigma_base + offset)
         out = nlm_filter(noisy, h)
         row = {'h': h, **metrics(reference, out)}
         rows.append(row)
@@ -138,7 +142,7 @@ def run_case(reference, dataset, level, tolerance, name, output, methods):
         print(f'START {dataset} tau={tolerance} {level} {name} {method}', flush=True)
         info = {}
         if method == 'nlm':
-            _, info = calibrate(reference, noisy, destination)
+            _, info = calibrate(reference, noisy, destination, level)
         if method in ('gnlm', 'nlmedians'):
             nlm = json.loads((destination/'nlm.json').read_text())
         start = time.perf_counter()
@@ -154,7 +158,7 @@ def run_case(reference, dataset, level, tolerance, name, output, methods):
         elif method == 'gnlm':
             gamma = 1.4 if nlm['h'] < 60 or nlm['sigma'] < 10 else 1.55
             filtered, h, *_ = run_geonlm_pipeline(reference, nlm['h'], noisy,
-                                                 f=4, t=7, mult=gamma, nn=10)
+                                                 f=1, t=3, mult=gamma, nn=7)
             info.update(h=h, gamma=gamma, h_source='scaled_current_nlm')
         elif method == 'median':
             filtered = median_filter(noisy, size=3, mode='reflect')
