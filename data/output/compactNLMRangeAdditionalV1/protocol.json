@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "method": "NLM bounded CUDA",
+  "f": 1,
+  "t": 3,
+  "h_grid_inclusive": [
+    1,
+    1024
+  ],
+  "selection": "max 0.5 PSNR +50 SSIM; smallest h on ties; also record PSNR/SSIM optima",
+  "datasets": [
+    "set12"
+  ],
+  "tolerances": [
+    0,
+    4
+  ],
+  "densities": [
+    0.03,
+    0.1
+  ],
+  "image_count": 11,
+  "total_cases": 44,
+  "source": "unifiedComparisonV1 saved noisy.npy with verified hashes",
+  "scale": [
+    0,
+    255
+  ],
+  "dtype": "float32",
+  "metrics": "clip/cast uint8; data_range=255; skimage0.20.0",
+  "search": "inclusive, clipped candidate centers; symmetric patch padding",
+  "h_policy": "absolute grid; no adaptive offset and no GNLM multiplier",
+  "timing": "sweep includes metrics; prepared GPU image reused; not legacy runtime benchmark",
+  "kernel_sha256": "fd5e20d8715bcb12c4867eea2a2611e3b93adce2d621a3da72c19cd51cb0d27c"
+}

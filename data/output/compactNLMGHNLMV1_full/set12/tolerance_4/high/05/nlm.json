@@ -1,0 +1,32 @@
+{
+  "dataset": "set12",
+  "level": "high",
+  "file_name": "05.png",
+  "tolerance": 4,
+  "density": 0.1,
+  "shape": [
+    512,
+    512
+  ],
+  "reference_sha256": "0a48bd94dc684e9744094acf5f9409ae1a147f367207cbcf847ffecc9506b1e3",
+  "noisy_sha256": "0d5e8010bb26a850d7bcc7fe1db68e0f0c6af22b17fa9bc70b31b059f1079a92",
+  "method": "nlm",
+  "f": 1,
+  "t": 3,
+  "sigma": 20.70403826617956,
+  "h0": 129,
+  "offset_range": [
+    100,
+    280
+  ],
+  "h_candidates": [
+    229,
+    409
+  ],
+  "h": 343,
+  "psnr": 27.014845805094332,
+  "ssim": 0.7859097012521261,
+  "score": 52.802907965153466,
+  "time_s": 4.6538963799976045,
+  "backend": "bounded_cuda_v1"
+}

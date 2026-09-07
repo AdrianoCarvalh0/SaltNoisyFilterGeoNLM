@@ -1,0 +1,50 @@
+{
+  "dataset": "set12",
+  "level": "moderate",
+  "file_name": "04.png",
+  "tolerance": 0,
+  "density": 0.03,
+  "shape": [
+    512,
+    512
+  ],
+  "reference_sha256": "7f6baec8e072815d469acd5d149f5da86b89ef26df1895c4edde2d5758900fd0",
+  "noisy_sha256": "5aab2f4c90265de03c4286a1026b54930c9f1174f15bd4788a5cea6ddc26c27a",
+  "method": "nlm",
+  "f": 1,
+  "t": 3,
+  "h": 227,
+  "psnr": 30.27597918818762,
+  "ssim": 0.8705002937395134,
+  "score": 58.66300428106948,
+  "h_best_psnr": 204,
+  "h_best_ssim": 240,
+  "metric_optima": {
+    "score": {
+      "h": 227,
+      "psnr": 30.27597918818762,
+      "ssim": 0.8705002937395134,
+      "score": 58.66300428106948
+    },
+    "psnr": {
+      "h": 204,
+      "psnr": 30.369669334508963,
+      "ssim": 0.8671036609453325,
+      "score": 58.54001771452111
+    },
+    "ssim": {
+      "h": 240,
+      "psnr": 30.179280462135445,
+      "ssim": 0.8709097442270974,
+      "score": 58.6351274424226
+    }
+  },
+  "any_optimum_at_boundary": false,
+  "time_sweep_s": 31.618736238000565,
+  "reused_candidates": 0,
+  "cuda_backend": "bounded_cuda_v1",
+  "h_grid_inclusive": [
+    1,
+    1024
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "state": "complete",
+  "updated_utc": "2026-09-07T15:44:25.607239+00:00",
+  "total_cases": 66,
+  "completed": 66,
+  "current": {
+    "file_name": "11.png",
+    "tolerance": 4,
+    "density": 0.2
+  },
+  "h_completed": 1024,
+  "elapsed_s": 2060.5782972860034,
+  "best_so_far": {
+    "h": 389,
+    "psnr": 20.99214158890284,
+    "ssim": 0.41893366942670296,
+    "score": 31.44275426578657
+  },
+  "h_score_min": 1,
+  "h_score_max": 723,
+  "boundary_cases": 8
+}

@@ -1,0 +1,8 @@
+{
+  "src/salt_experiments/compact_nlm_sweep/run.py": "909079f00de5479517ab4b160e8613b63aa4686378b99186d0695547028b4710",
+  "src/salt_experiments/compact_nlm_sweep/analyze_adaptive_offsets.py": "a6e83580983748a30607b9dd3bcc7166709224d52cb6e5bb712af8cebd77a5e1",
+  "src/salt_experiments/compact_nlm_sweep/complete_density_ranges.py": "044b4bedbfe4afc4a3c612ce7141c517356af7abe5040d294dc5453d55bac0b8",
+  "src/salt_experiments/compact_nlm_sweep/nlm_cuda.py": "fd5e20d8715bcb12c4867eea2a2611e3b93adce2d621a3da72c19cd51cb0d27c",
+  "src/salt_experiments/compact_nlm_sweep/plot_first_image.py": "0b11fcf6678b6f5005ff49ae1f1cacea18af446cd6cd95e8687dc552ed364253",
+  "src/salt_experiments/compact_nlm_sweep/verify_cuda.py": "e4d6f0bcb5492e61611ea9e2547c9731e87edf562c2a4bdef846e734beb64a3e"
+}

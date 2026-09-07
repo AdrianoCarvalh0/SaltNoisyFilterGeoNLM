@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "datasets": [
+    "set12",
+    "set50"
+  ],
+  "methods": [
+    "nlm",
+    "ghnlm"
+  ],
+  "f": 1,
+  "t": 3,
+  "ghnlm_k": 7,
+  "tolerances": [
+    0,
+    4
+  ],
+  "densities": [
+    0.01,
+    0.03,
+    0.05,
+    0.1,
+    0.2
+  ],
+  "nlm_h": "h0 plus Set12 calibrated density offsets, clipped to positive; score 0.5 PSNR + 50 SSIM",
+  "ghnlm_h": 1.0,
+  "scale": [
+    0,
+    255
+  ],
+  "corrected_cuda": true,
+  "images_per_dataset": {
+    "set12": 11,
+    "set50": 50
+  }
+}

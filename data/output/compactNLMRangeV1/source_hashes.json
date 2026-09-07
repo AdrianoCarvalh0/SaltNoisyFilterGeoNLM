@@ -1,0 +1,5 @@
+{
+  "src/salt_experiments/compact_nlm_sweep/run.py": "99f8de89933f6f871e79740271caa8f21e27cac18ec44224b1c267da652aea59",
+  "src/salt_experiments/compact_nlm_sweep/nlm_cuda.py": "fd5e20d8715bcb12c4867eea2a2611e3b93adce2d621a3da72c19cd51cb0d27c",
+  "src/salt_experiments/compact_nlm_sweep/verify_cuda.py": "e4d6f0bcb5492e61611ea9e2547c9731e87edf562c2a4bdef846e734beb64a3e"
+}
