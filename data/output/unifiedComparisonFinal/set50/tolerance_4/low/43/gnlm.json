@@ -1,0 +1,24 @@
+{
+  "dataset": "set50",
+  "level": "low",
+  "file_name": "43.gif",
+  "tolerance": 4,
+  "density": 0.01,
+  "shape": [
+    512,
+    512
+  ],
+  "reference_sha256": "443801cafadb33c7829b313f4efd834e70cc313567a260dd2b5554dc7ee6be98",
+  "noisy_sha256": "6394660e8c72e57fc5c7c594b33f2b5ea8133d35035f9bd36c33528cfb04cc77",
+  "method": "gnlm",
+  "h": 205.79999999999998,
+  "gamma": 1.4,
+  "h_source": "scaled_current_nlm",
+  "psnr": 28.741500936781087,
+  "ssim": 0.8401496500423518,
+  "score": 56.37823297050814,
+  "time_filter_call_s": 45.18034949499997,
+  "cpu_worker_limit": 8,
+  "numba_thread_limit": 8,
+  "nlm_backend": "NLM_fast_cuda_global"
+}
