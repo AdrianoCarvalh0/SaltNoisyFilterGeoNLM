@@ -1,0 +1,13 @@
+{
+  "dataset": "set12",
+  "level": "low",
+  "file_name": "09.png",
+  "tolerance": 0,
+  "density": 0.01,
+  "shape": [
+    512,
+    512
+  ],
+  "reference_sha256": "4b3ddbef5883a30e02120d9280c878727f5282bb054525cf3a5b0fcffb889d5c",
+  "noisy_sha256": "f57c1e0803358fa46cb3fcadacd603e0bc8a9a1500621f0dea3a800d055c6fe6"
+}
