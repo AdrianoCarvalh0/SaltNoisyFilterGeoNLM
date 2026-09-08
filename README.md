@@ -6,20 +6,18 @@ Reproducible **salt & pepper / near-extreme impulse** denoising experiments with
 This repository accompanies the manuscript submitted to
 **Signal, Image and Video Processing (SIViP)** — Springer Nature.
 
-The **canonical, final experiment** is the unified comparison in
+The experiment is the unified comparison in
 [`src/salt_experiments/unified_comparison/`](src/salt_experiments/unified_comparison).
-It runs one matched, resumable protocol across both datasets, all noise densities,
-and both impulse tolerances, comparing seven methods:
+It is **fully self-contained**: every filter, noise model and helper it needs lives
+in that package's `lib/` folder, and it reads the clean reference images directly
+from `data/input/`. You reproduce everything **from scratch** — no pre-computed data
+is required. It runs one matched, resumable protocol across both datasets, all noise
+densities, and both impulse tolerances, comparing seven methods:
 
 `nlm`, `ianlm`, `median`, `aswmf`, `nlmedians`, `ghnlm`, `gnlm`
 
-All earlier scripts (per-level `Salt_*`/`main_*`, hybrid runs, sweeps, timing studies)
-are kept as **legacy / exploratory** material — see [Legacy material](#legacy--exploratory-material).
-
-> **Note on datasets:** *Set12* here contains **11 images**. The *Lena* image was
-> removed because its use is restricted (it was disallowed in our previous IEEE Access
-> submission). All results in `data/output/unifiedComparisonFinal/` reflect this
-> (`n=11` for Set12, `n=50` for Set50).
+> **Note on datasets:** *Set12* here contains **11 images** (`n=11`); *Set50*
+> contains **50 images** (`n=50`).
 
 The environment is fully **reproducible**, frozen via:
 
@@ -112,36 +110,58 @@ SaltAndPepper/
 │
 ├─ data/
 │  ├─ input/
-│  │  ├─ set12/                   # Set12 benchmark (11 images; Lena removed)
-│  │  └─ set50/                   # 50-image dataset
+│  │  ├─ set12/                   # Set12 benchmark (11 images: 01.png .. 11.png)
+│  │  └─ set50/                   # 50-image dataset (0 .. 49)
 │  └─ output/
-│     ├─ unifiedComparisonFinal/  # >>> FINAL results (the canonical experiment) <<<
-│     └─ ...                      # legacy / exploratory outputs (see below)
+│     └─ unifiedComparison/       # results are written here (starts empty)
 │
 ├─ src/
 │  └─ salt_experiments/
-│     ├─ unified_comparison/      # >>> FINAL experiment (run here) <<<
-│     │  ├─ run.py                # Matched, resumable protocol
-│     │  └─ run_sequence.py       # Two-phase resumable orchestration
-│     ├─ functions/               # Shared filter implementations (NLM, IANLM, GHNLM, ...)
-│     ├─ metrics/                 # Plotting notebooks and table generators
-│     └─ (legacy)                 # set12/, set50/, *_hibrid/, *_impulse_tolerance/, compact_*
+│     └─ unified_comparison/      # the experiment — self-contained
+│        ├─ run.py                # matched, resumable protocol (run this)
+│        ├─ run_sequence.py       # two-phase resumable orchestration
+│        └─ lib/                  # all filters, noise model and helpers
+│           ├─ nlm_functions.py         # NLM: mirror padding + CUDA/CPU backends
+│           ├─ anlm_functions.py        # IANLM (impulse-aware NLM)
+│           ├─ geonlm_functions.py      # GNLM (graph/KNN NLM)
+│           ├─ geonlm_medians_functions.py  # GHNLM + shared robust helpers
+│           ├─ nlmedians.py             # NLMedians
+│           ├─ salt_filters.py          # ASWMF
+│           ├─ impulse_tolerance_filters.py  # tolerance-aware entry points
+│           └─ noisy_functions.py       # salt & pepper / near-extreme impulse noise
 │
 └─ README.md
 ```
 
 ---
 
-## Running the Final Experiment (unified_comparison)
+## Running the Experiment
 
-All experiments run **inside the container**. The final comparison is a single
-matched protocol; it is **resumable** and **idempotent** — each completed
-`{method}.json` is a completion marker, so re-running skips finished work.
+All experiments run **inside the container**. The comparison is a single matched
+protocol; it is **resumable** and **idempotent** — each completed `{method}.json`
+is a completion marker, so re-running skips finished work.
 
 The scripts resolve their own paths and imports, so run them **directly** from the
 repository root (no `PYTHONPATH` needed).
 
-Full run (both datasets, all levels, both tolerances, all methods):
+### 1. Test run first (recommended)
+
+Before the full run, verify your GPU and environment on a single image. This
+completes in a few minutes and writes to a throwaway directory:
+
+```bash
+python src/salt_experiments/unified_comparison/run.py \
+    --datasets set12 --levels low --tolerances 0 \
+    --max-images 1 --output data/output/test_run
+```
+
+If it prints `DONE` lines for each method and writes `summary_partial.csv`, your
+setup is good.
+
+### 2. Full run
+
+Both datasets, all densities, both tolerances, all methods. Results are written to
+the empty `data/output/unifiedComparison/` directory:
 
 ```bash
 python src/salt_experiments/unified_comparison/run.py
@@ -154,10 +174,6 @@ Scope the run with CLI flags:
 python src/salt_experiments/unified_comparison/run.py \
     --datasets set12 --levels low high --tolerances 0 \
     --methods ianlm ghnlm
-
-# Quick smoke test: first image only, into a scratch directory
-python src/salt_experiments/unified_comparison/run.py \
-    --max-images 1 --output data/output/scratch
 ```
 
 Available options:
@@ -169,10 +185,10 @@ Available options:
 | `--tolerances` | `0`, `4` | both |
 | `--methods`  | `nlm`, `ianlm`, `median`, `aswmf`, `nlmedians`, `ghnlm`, `gnlm` | all |
 | `--max-images` | positive integer | all images |
-| `--output`   | path | `data/output/unifiedComparisonV1` |
+| `--output`   | path | `data/output/unifiedComparison` |
 
-> `nlm` is always calibrated first because several methods derive their `h`
-> from the current NLM calibration (never from a legacy pickle).
+> `nlm` is always calibrated first because several methods derive their `h` from
+> the current per-image NLM calibration.
 
 ### Orchestrated two-phase run
 
@@ -199,7 +215,7 @@ Selection metric used throughout: **score = 0.5·PSNR + 50·SSIM** (uint8, `data
 
 ## Results
 
-Final results live in **`data/output/unifiedComparisonFinal/`**:
+Your run writes everything to **`data/output/unifiedComparison/`**:
 
 - `protocol.json` — the exact, versioned protocol used (all hyperparameters).
 - `summary_partial.csv` — aggregated PSNR / SSIM / score / runtime, grouped by
@@ -229,47 +245,15 @@ work) also refreshes the summaries safely.
 
 ## Data
 
-Input images used by the experiments:
+The experiment reads the clean reference images directly from `data/input/` and
+generates the noisy versions on the fly (fixed seed = 42). Nothing else is needed.
 
-- `data/input/set12/` — **Set12** benchmark, **11 images** (Lena removed for licensing).
-- `data/input/set50/` — **50-image** dataset.
+- `data/input/set12/` — **Set12** benchmark, **11 images** (`01.png` .. `11.png`).
+- `data/input/set50/` — **50-image** dataset (`0` .. `49`).
 
-Clean references consumed by `unified_comparison` come from the legacy NLM pickles at
-`data/output/<dataset>/salt_pepper_<level>/full_512/results/array_nlm_salt_pepper_<level>_filtereds.pkl`.
-These legacy outputs must remain in place for the final run to reproduce.
-
----
-
-## Figures, Crops and Tables (previously used)
-
-Visual and tabular artifacts produced for the analysis:
-
-- `data/output/crop_previews/`, `data/output/crops_extreme_regions/`,
-  `data/output/crops_extreme_regions_150_450/` — zoomed crops for qualitative figures.
-- `data/output/selected_noisy_images/` — chosen noisy examples for figures.
-- `data/output/ianlm_vs_ghnlm/`, `data/output/ianlm_timing/` — IANLM vs GHNLM
-  comparison and runtime study.
-- `data/output/hibrid_runtime_tables/`, `data/output/hibrid_statistical_tables/` —
-  runtime and statistical tables.
-
-Plotting notebooks and table generators are under `src/salt_experiments/metrics/`:
-
-Run these directly from the repository root (they resolve their own imports; some
-write to `/workspace/data/output/...`, i.e. they expect the container mount):
-
-```bash
-# Runtime tables
-python src/salt_experiments/metrics/create_runtime_tables.py
-
-# IANLM vs GHNLM comparison
-python src/salt_experiments/metrics/create_ianlm_vs_ghnlm_comparison.py
-
-# Statistical tables
-python src/salt_experiments/metrics/create_hibrid_statistical_tables.py
-```
-
-The `*.ipynb` notebooks (`graphs_results_*.ipynb`, `best_results_PSNR_SSSIM_GEO.ipynb`)
-open directly in VS Code / Jupyter inside the container.
+Images are loaded as grayscale and cast to `float32` in `[0,255]`. The per-case
+`case.json` records SHA-256 hashes of both the reference and the noisy array, so
+identity is verifiable.
 
 ---
 
@@ -297,7 +281,7 @@ PSNR / SSIM / score"]
 
     F --> G["Save outputs
 uint8 .npy + per-case .json
-data/output/unifiedComparisonFinal/"]
+data/output/unifiedComparison/"]
 ```
 
 ---
@@ -327,32 +311,14 @@ Avoid adding Conda-managed packages to `requirements-pip.txt`.
 
 ---
 
-## Legacy / Exploratory material
+## Input Images (Git LFS)
 
-Kept for provenance and reproducibility of intermediate studies. **Not** part of
-the final protocol, but some (the `salt_pepper_*` pickles) are still consumed by
-`unified_comparison` as clean references, so do not delete them.
-
-Source (`src/salt_experiments/`):
-
-- `set12/`, `set50/` — per-level `main_*` / `Salt_*` scripts and parameter sweeps.
-- `set12_hibrid/`, `set50_hibrid/` — hybrid (ASWMF + NLM) runs and ablations.
-- `set12_impulse_tolerance/`, `set50_impulse_tolerance/` — impulse-tolerance studies.
-- `compact_nlm_sweep/`, `compact_nlm_ghnlm/` — compact NLM range sweeps.
-- `measure_ianlm_hibrid_times.py` — timing measurements.
-
-Outputs (`data/output/`): `set12/`, `set50/`, `set12Hibrid/`, `set50Hibrid/`,
-`set12ImpulseTolerance*/`, `set50ImpulseToleranceH1/`, `compactNLMRange*/`.
-
----
-
-## Data & Outputs (Git LFS)
-
-Large experiment outputs can bloat the repo. Use Git LFS if needed:
+The input images under `data/input/` are tracked with Git LFS. After cloning,
+fetch them before running:
 
 ```bash
 git lfs install
-echo "data/** filter=lfs diff=lfs merge=lfs -text" >> .gitattributes
+git lfs pull
 ```
 
 ---

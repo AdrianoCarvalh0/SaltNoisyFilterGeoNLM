@@ -1,0 +1,889 @@
+\documentclass[pdflatex,iicol,sn-mathphys-num]{sn-jnl}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{bm}
+\usepackage{xspace}
+\usepackage[utf8]{inputenc}
+\providecommand{\burl}{\url}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+
+\newcommand{\method}{IANLM\xspace}
+\newcommand{\ianlm}{IANLM\xspace}
+\newcommand{\ghnlm}{GHNLM\xspace}
+\newcommand{\nlm}{NLM\xspace}
+\newcommand{\gnlm}{GNLM\xspace}
+\newcommand{\geonlm}{GEO-NLM\xspace}
+\newcommand{\aswmf}{ASWMF\xspace}
+\newcommand{\nlmedian}{NLMedians\xspace}
+\newcommand{\todo}[1]{#1}
+\newcommand{\pending}[3]{\par\noindent\textbf{Pending verification (#1).} #2\pt{\textbf{Verificação pendente (#1).} #3}\par}
+
+
+\usepackage[T1]{fontenc}
+\usepackage{xcolor}
+% Revisão bilíngue: mudar para \showportuguesefalse para ocultar traduções.
+\newif\ifshowportuguese
+\showportuguesefalse
+\newcommand{\pt}[1]{\ifshowportuguese\par\begingroup\small\color{blue!55!black}\noindent\textbf{PT: }#1\par\endgroup\fi}
+\newif\ifrevisionnotes
+\revisionnotestrue
+\newcommand{\revisionnote}[1]{\ifrevisionnotes\par\noindent\textbf{Revisão: }#1\par\fi}
+\graphicspath{{./}}
+
+\begin{document}
+\title[IANLM for Impulse Noise]{IANLM: Impulse-Aware Non-Local Restoration for Salt-and-Pepper Image Denoising}
+% PT: IANLM: restauração não local orientada a impulsos para remoção de ruído sal-e-pimenta em imagens.
+\author*[1]{\fnm{Adriano dos Reis} \sur{Carvalho}}\email{adriano.carvalho@ifsuldeminas.edu.br}
+\author[1]{\fnm{Alexandre L. M.} \sur{Levada}}
+\affil[1]{\orgdiv{Computing Department}, \orgname{Federal University of S\~ao Carlos}, \orgaddress{\city{S\~ao Carlos}, \state{SP}, \country{Brazil}}}
+
+\abstract{
+Salt-and-pepper noise replaces selected image intensities with extreme values. This work presents impulse-aware non-local means (IANLM), combining selective filtering, candidate rejection, patch similarity, spatial weighting, and local fallback. A configurable detector extends strict endpoint detection to $[0,\tau]$ and $[255-\tau,255]$ on the intensity scale $[0,255]$. Seven methods are evaluated over 610 image--density--tolerance conditions using 11 Set12 and 50 Set50 entries, five noise densities, and $\tau\in\{0,4\}$, yielding 4,270 method records. The comparison uses compact patch settings and distinguishes calibrated NLM/GNLM from IANLM and geodesic hybrid non-local means (GHNLM), both with fixed $h=1$. Mean IANLM PSNR is 44.79 and 43.84 dB on Set12, and 39.01 and 37.65 dB on Set50, at $\tau=0$ and $\tau=4$, respectively. IANLM has slightly higher dataset-level mean PSNR than GHNLM in all four settings, but neither method dominates every image-level metric. Recorded IANLM fallback fractions average 91.29--93.16\% across the four dataset--tolerance groups, motivating component ablations before attributing gains to non-local aggregation. The results support the complete procedure under the evaluated synthetic impulse models, while shared dataset content, full-reference baseline calibration, and unverified timing scopes limit broader interpretation. Larger detector tolerances can select legitimate dark or bright pixels and require caution.
+\pt{O ruído sal-e-pimenta substitui intensidades selecionadas da imagem por valores extremos. Este trabalho apresenta o non-local means orientado a impulsos (IANLM), combinando filtragem seletiva, rejeição de candidatos, similaridade entre patches, ponderação espacial e fallback local. Um detector configurável estende a detecção estrita nos extremos para $[0,\tau]$ e $[255-\tau,255]$ na escala de intensidade $[0,255]$. Sete métodos são avaliados em 610 condições de imagem, densidade e tolerância, usando 11 entradas do Set12 e 50 do Set50, cinco densidades de ruído e $\tau\in\{0,4\}$, totalizando 4.270 registros de métodos. A comparação usa configurações compactas de patch e distingue NLM/GNLM calibrados de IANLM e non-local means híbrido geodésico (GHNLM), ambos com $h=1$ fixo. O PSNR médio do IANLM é 44,79 e 43,84 dB no Set12 e 39,01 e 37,65 dB no Set50, em $\tau=0$ e $\tau=4$, respectivamente. O IANLM apresenta PSNR médio por conjunto ligeiramente superior ao GHNLM nas quatro configurações, mas nenhum método domina todas as métricas por imagem. As frações registradas de fallback do IANLM têm médias de 91,29--93,16\% nos quatro grupos de conjunto e tolerância, motivando ablações de componentes antes de atribuir ganhos à agregação não local. Os resultados sustentam o procedimento completo nos modelos impulsivos sintéticos avaliados, enquanto conteúdo compartilhado entre conjuntos, calibração de baselines com referência completa e escopos de tempo não verificados limitam interpretações mais amplas. Tolerâncias maiores do detector podem selecionar pixels escuros ou claros legítimos e exigem cautela.}
+}
+
+\keywords{Image denoising, salt-and-pepper noise, impulse-aware restoration, non-local means, switching filters, parameter sensitivity}
+\maketitle
+
+
+
+\section{Introduction}
+\label{sec:introduction}
+
+Image denoising is a fundamental inverse problem in image processing, whose goal is to recover a clean image from a noisy observation~\cite{buades2005review}. It has applications in digital photography~\cite{foi2008practical}, magnetic resonance imaging~\cite{coupe2008optimized}, and fluorescence microscopy~\cite{zhang2019fluorescence}. Since different acquisition processes produce noise with distinct statistical properties, the design of a denoising method should account for the underlying degradation model~\cite{buades2005review,foi2008practical}.
+\pt{A remoção de ruído em imagens é um problema inverso fundamental em processamento de imagens, cujo objetivo é recuperar uma imagem limpa a partir de uma observação ruidosa~\cite{buades2005review}. Ela tem aplicações em fotografia digital~\cite{foi2008practical}, imagens de ressonância magnética~\cite{coupe2008optimized} e microscopia de fluorescência~\cite{zhang2019fluorescence}. Como diferentes processos de aquisição produzem ruídos com propriedades estatísticas distintas, o projeto de um método de remoção de ruído deve considerar o modelo de degradação subjacente~\cite{buades2005review,foi2008practical}.}
+
+Salt-and-pepper noise is a widely used model for impulsive image degradation~\cite{wang1999progressive,esakkirajan2011removal}. In this model, a subset of pixels is randomly replaced by extreme intensity values, typically 0 and 255 in 8-bit grayscale images~\cite{esakkirajan2011removal}. Such impulses can obscure image details, motivating restoration methods that distinguish corrupted pixels from reliable samples~\cite{hwang1995adaptive,wang1999progressive}.
+\pt{O ruído sal-e-pimenta é um modelo amplamente usado para degradação impulsiva de imagens~\cite{wang1999progressive,esakkirajan2011removal}. Nesse modelo, um subconjunto de pixels é substituído aleatoriamente por valores extremos de intensidade, tipicamente 0 e 255 em imagens em tons de cinza de 8 bits~\cite{esakkirajan2011removal}. Esses impulsos podem ocultar detalhes da imagem, motivando métodos de restauração que distinguem pixels corrompidos de amostras confiáveis~\cite{hwang1995adaptive,wang1999progressive}.}
+
+Conventional smoothing can suppress image details along with noise, whereas adaptive median filters seek to balance impulse removal and detail preservation~\cite{hwang1995adaptive}. Switching filters explicitly separate detection from restoration and restrict filtering to pixels classified as corrupted~\cite{wang1999progressive,zhang2002new}. This selective processing preserves pixels classified as reliable, although its effectiveness depends on the accuracy of the impulse detector~\cite{zhang2002new}.
+\pt{A suavização convencional pode suprimir detalhes da imagem junto com o ruído, enquanto filtros de mediana adaptativa procuram equilibrar remoção de impulsos e preservação de detalhes~\cite{hwang1995adaptive}. Filtros com chaveamento separam explicitamente detecção e restauração e restringem a filtragem aos pixels classificados como corrompidos~\cite{wang1999progressive,zhang2002new}. Esse processamento seletivo preserva pixels classificados como confiáveis, embora sua eficácia dependa da precisão do detector de impulsos~\cite{zhang2002new}.}
+
+The development of salt-and-pepper denoising methods has therefore been strongly influenced by nonlinear, median-based, and decision-based strategies. Adaptive median filters use variable-size windows to remove impulse pixels while attempting to preserve sharp structures~\cite{hwang1995adaptive}. Progressive switching median filters used an explicit detection-before-filtering strategy and applied detection and restoration progressively over multiple iterations~\cite{wang1999progressive}. Dedicated impulse detectors and fast decision-based algorithms further reinforced the importance of identifying corrupted pixels before restoration, especially under high-density impulse noise~\cite{zhang2002new,srinivasan2007new}. Decision-based and trimmed-median filters also improved robustness by discarding extreme-valued candidates before computing the replacement value~\cite{esakkirajan2011removal}. These methods established the importance of three principles that are also central to this work: impulse detection, candidate rejection, and selective restoration.
+\pt{O desenvolvimento de métodos para remoção de ruído sal-e-pimenta foi, portanto, fortemente influenciado por estratégias não lineares, baseadas em mediana e baseadas em decisão. Filtros de mediana adaptativa usam janelas de tamanho variável para remover pixels impulsivos enquanto tentam preservar estruturas nítidas~\cite{hwang1995adaptive}. Filtros de mediana com chaveamento progressivo utilizaram uma estratégia explícita de detecção antes da filtragem e aplicaram detecção e restauração progressivamente ao longo de múltiplas iterações~\cite{wang1999progressive}. Detectores de impulsos dedicados e algoritmos rápidos baseados em decisão reforçaram ainda mais a importância de identificar pixels corrompidos antes da restauração, especialmente sob ruído impulsivo de alta densidade~\cite{zhang2002new,srinivasan2007new}. Filtros baseados em decisão e em mediana aparada também melhoraram a robustez ao descartar candidatos com valores extremos antes de calcular o valor de substituição~\cite{esakkirajan2011removal}. Esses métodos estabeleceram a importância de três princípios que também são centrais neste trabalho: detecção de impulsos, rejeição de candidatos e restauração seletiva.}
+
+
+Non-Local Means (\nlm) exploits self-similarity in images by averaging pixels whose surrounding patches are similar~\cite{buades2005nlm,buades2005review}. This patch-based formulation was evaluated for additive Gaussian noise and can preserve textures and repeated structures~\cite{buades2005nlm}. In its classical form, both patch distances and the weighted average are computed from the observed image~\cite{buades2005nlm}. Consequently, applying that formulation directly to an impulse-corrupted image allows extreme-valued observations to enter both computations. This motivates our use of explicit impulse detection and candidate rejection, drawing on switching and trimmed-sample restoration strategies~\cite{wang1999progressive,esakkirajan2011removal}.
+\pt{O Non-Local Means (\nlm) explora a autossimilaridade em imagens ao calcular médias de pixels cujos patches ao redor são semelhantes~\cite{buades2005nlm,buades2005review}. Essa formulação baseada em patches foi avaliada para ruído Gaussiano aditivo e pode preservar texturas e estruturas repetidas~\cite{buades2005nlm}. Em sua forma clássica, tanto as distâncias entre patches quanto a média ponderada são calculadas a partir da imagem observada~\cite{buades2005nlm}. Consequentemente, aplicar essa formulação diretamente a uma imagem corrompida por impulsos permite que observações com valores extremos participem de ambos os cálculos. Isso motiva nosso uso de detecção explícita de impulsos e rejeição de candidatos, com base em estratégias de restauração com chaveamento e descarte de amostras~\cite{wang1999progressive,esakkirajan2011removal}.}
+
+In this work, we propose \method, an impulse-aware non-local means method specifically designed for salt-and-pepper image denoising. The proposed method combines switching restoration, candidate rejection inspired by the Adaptive Switching Weight Mean Filter (\aswmf)~\cite{thanh2020adaptive}, ASWMF-style spatial weighting, non-local patch similarity, and a local fallback mechanism when the accumulated aggregation weight is zero. The central idea is to preserve pixels classified as reliable while restoring detected impulses.
+\pt{Neste trabalho, propomos o \method, um método Non-Local Means orientado a impulsos, projetado especificamente para remoção de ruído sal-e-pimenta em imagens. O método proposto combina restauração com chaveamento, rejeição de candidatos inspirada no Adaptive Switching Weight Mean Filter (\aswmf)~\cite{thanh2020adaptive}, ponderação espacial no estilo ASWMF, similaridade não local entre patches e um mecanismo de fallback local quando a soma dos pesos de agregação é zero. A ideia central é preservar pixels classificados como confiáveis enquanto restaura os impulsos detectados.}
+
+In addition, the comparison includes a geodesic impulse-aware variant, called GHNLM, to investigate whether graph-based patch distances provide benefits over the Euclidean impulse-aware formulation. A matched comparison requires the same local support, detector, candidate rejection, replacement rule, and fallback. This comparison must not be confused with the general-purpose GNLM baseline, which also uses compact support here but does not incorporate the same impulse-aware restoration rules.
+\pt{Além disso, a comparação inclui uma variante geodésica orientada a impulsos, denominada GHNLM, para investigar se distâncias entre patches baseadas em grafos oferecem benefícios em relação à formulação Euclidiana orientada a impulsos. Uma comparação correspondente exige o mesmo suporte local, detector, rejeição de candidatos, regra de substituição e fallback. Essa comparação não deve ser confundida com o baseline GNLM de propósito geral, que também usa suporte compacto aqui, mas não incorpora as mesmas regras de restauração orientadas a impulsos.}
+
+
+In-camera processing, including demosaicing, gamma correction, and compression, affects the noise observed in processed photographs~\cite{guo2019real}. This motivates investigating departures from the strict endpoint impulse model. Here, we study a restricted extension in which impulse values remain near the intensity extremes; this experiment does not reproduce a complete camera processing pipeline or establish robustness to arbitrary smoothing.
+\pt{O processamento interno das câmeras, incluindo demosaicing, correção gama e compressão, afeta o ruído observado nas fotografias processadas~\cite{guo2019real}. Isso motiva investigar desvios em relação ao modelo de impulsos estritamente nos extremos. Neste trabalho, estudamos uma extensão restrita em que os valores impulsivos permanecem próximos dos extremos de intensidade; esse experimento não reproduz um pipeline completo de processamento de câmera nem estabelece robustez a suavizações arbitrárias.}
+
+The main contributions of this paper are summarized as follows:
+\pt{As principais contribuições deste artigo são resumidas a seguir:}
+\begin{itemize}
+    \item We formulate IANLM by combining selective restoration, rejection of detected impulse candidates, patch similarity, ASWMF-inspired spatial weighting, and a local fallback when the aggregation normalizer is zero. Pixels classified as reliable are preserved unchanged.
+\pt{Formulamos o IANLM combinando restauração seletiva, rejeição de candidatos detectados como impulsos, similaridade entre patches, ponderação espacial inspirada no ASWMF e fallback local quando o normalizador da agregação é nulo. Pixels classificados como confiáveis são preservados inalterados.}
+    \item We extend strict endpoint detection through a configurable tolerance $\tau$, using $[0,\tau]$ and $[255-\tau,255]$ for both target selection and candidate rejection. The expanded protocol emphasizes $\tau=0$ and $\tau=4$, with explicit attention to false detections in clean dark or bright regions.
+\pt{Estendemos a detecção estrita nos extremos por meio de uma tolerância configurável $\tau$, usando $[0,\tau]$ e $[255-\tau,255]$ tanto para selecionar alvos quanto para rejeitar candidatos. O protocolo ampliado enfatiza $\tau=0$ e $\tau=4$, com atenção explícita às falsas detecções em regiões limpas escuras ou claras.}
+    \item We separate the density-specific calibration of compact NLM from the fixed $h=1$ setting reported for IANLM and GHNLM on $[0,255]$. The effects of smoothing, numerical underflow, and local fallback require separate sensitivity and component analyses.
+\pt{Separamos a calibração do NLM compacto específica por densidade da configuração fixa $h=1$ informada para IANLM e GHNLM em $[0,255]$. Os efeitos da suavização, do underflow numérico e do fallback local exigem análises separadas de sensibilidade e componentes.}
+    \item We specify a Set12/Set50 comparison across five noise densities and two tolerances, distinguishing compact NLM, compact GNLM, IANLM, and GHNLM under shared structural settings. The official image-level records establish complete coverage for seven methods; timing scopes and component contributions require separate verification.
+\pt{Especificamos uma comparação Set12/Set50 em cinco densidades de ruído e duas tolerâncias, distinguindo NLM compacto, GNLM compacto, IANLM e GHNLM sob configurações estruturais comuns. Os registros oficiais por imagem estabelecem cobertura completa para sete métodos; os escopos de tempo e as contribuições dos componentes exigem verificação separada.}
+\end{itemize}
+
+The fixed smoothing parameter and configurable detection tolerance provide a basis for packaging the method as a reusable Python library. Such a library would expose the intensity range and tolerance explicitly and document the supported noise model. Library packaging and validation on acquired camera noise remain future development steps.
+\pt{O parâmetro de suavização fixo e a tolerância configurável fornecem uma base para empacotar o método como uma biblioteca Python reutilizável. Essa biblioteca disponibilizaria explicitamente a escala de intensidade e a tolerância e documentaria o modelo de ruído suportado. O empacotamento e a validação com ruído adquirido por câmeras permanecem como etapas futuras.}
+
+
+Section~\ref{sec:related} reviews related work. Sections~\ref{sec:impulse_background} and~\ref{sec:nlm} define the noise model, tolerance, and original non-local formulation. Section~\ref{sec:method} distinguishes IANLM, GHNLM, and GEO-NLM and analyzes computational complexity. Section~\ref{sec:experiments} documents the experimental protocol and calibration. Sections~\ref{sec:results}--\ref{sec:runtime} organize the pending quantitative, sensitivity, visual, and runtime evaluations. Sections~\ref{sec:limitations} and~\ref{sec:conclusion} state the limitations and conclusions.
+\pt{A Seção~\ref{sec:related} revisa os trabalhos relacionados. As Seções~\ref{sec:impulse_background} e~\ref{sec:nlm} definem o modelo de ruído, a tolerância e a formulação não local original. A Seção~\ref{sec:method} distingue IANLM, GHNLM e GEO-NLM e analisa a complexidade computacional. A Seção~\ref{sec:experiments} documenta o protocolo experimental e a calibração. As Seções~\ref{sec:results}--\ref{sec:runtime} organizam as avaliações quantitativas, de sensibilidade, visuais e de tempo pendentes. As Seções~\ref{sec:limitations} e~\ref{sec:conclusion} apresentam as limitações e conclusões.}
+
+
+\section{Related Work}
+\label{sec:related}
+
+Salt-and-pepper denoising has traditionally been addressed using median-based, decision-based, and switching filters. The standard median filter is robust to extreme outliers because it replaces each pixel with the median value in a local neighborhood. However, it applies the same operation to both corrupted and uncorrupted pixels, which may blur fine details and alter clean image structures.
+\pt{A remoção de ruído sal-e-pimenta tem sido tradicionalmente tratada por filtros baseados em mediana, filtros baseados em decisão e filtros com chaveamento. O filtro de mediana padrão é robusto a outliers extremos porque substitui cada pixel pelo valor mediano em uma vizinhança local. No entanto, ele aplica a mesma operação tanto a pixels corrompidos quanto a pixels não corrompidos, o que pode borrar detalhes finos e alterar estruturas limpas da imagem.}
+
+Switching filters address this limitation by first detecting whether a pixel is corrupted and then filtering only those pixels classified as impulses. This strategy is particularly suitable for salt-and-pepper noise, since non-impulse pixels remain reliable and should therefore be preserved unchanged. The Adaptive Switching Weighted Mean Filter (\aswmf)~\cite{thanh2020adaptive} follows this principle by combining impulse detection, rejection of candidate pixels with values 0 or 255, and weighted local reconstruction.
+\pt{Filtros com chaveamento tratam essa limitação detectando primeiro se um pixel está corrompido e filtrando apenas os pixels classificados como impulsos. Essa estratégia é particularmente adequada para ruído sal-e-pimenta, pois pixels não impulsivos permanecem confiáveis e, portanto, devem ser preservados inalterados. O Adaptive Switching Weighted Mean Filter (\aswmf)~\cite{thanh2020adaptive} segue esse princípio ao combinar detecção de impulsos, rejeição de candidatos com valores 0 ou 255 e reconstrução local ponderada.}
+
+Several decision-based and adaptive filters have been developed specifically for salt-and-pepper and impulse noise. The Decision Based UnSymmetric Trimmed Median filter (DBUTM)~\cite{shekar2011removal} detects extreme-valued pixels and computes replacement values after discarding impulse candidates from the local window. Reliable-weight strategies have also been proposed for random-valued impulse noise, assigning more trustworthy contributions to pixels classified as reliable during restoration~\cite{jin2020removing}. More recent approaches also include hardware-oriented feedback mean filtering~\cite{siva2024hsmf}. These methods reinforce the importance of impulse detection, candidate rejection, and reliability-aware weighting, but remain mainly local or implementation-oriented.
+\pt{Diversos filtros baseados em decisão e adaptativos foram desenvolvidos especificamente para ruído sal-e-pimenta e ruído impulsivo. O Decision Based UnSymmetric Trimmed Median filter (DBUTM)~\cite{shekar2011removal} detecta pixels com valores extremos e calcula valores de substituição após descartar candidatos impulsivos da janela local. Estratégias baseadas em pesos de confiabilidade também foram propostas para ruído impulsivo de valores aleatórios, atribuindo contribuições mais confiáveis aos pixels classificados como confiáveis durante a restauração~\cite{jin2020removing}. Abordagens mais recentes também incluem filtragem por média com realimentação orientada a hardware~\cite{siva2024hsmf}. Esses métodos reforçam a importância da detecção de impulsos, da rejeição de candidatos e da ponderação orientada à confiabilidade, mas permanecem principalmente locais ou orientados à implementação.}
+
+Other recent salt-and-pepper filters continue to explore adaptive local reconstruction, iterative restoration, and hybrid decision rules. Iterative weighted-mean approaches estimate corrupted pixels through repeated detection and weighted reconstruction, aiming to reduce blur under high-density corruption~\cite{chen2020iterative}. Two-stage and cascading strategies combine a first detection or coarse restoration stage with a second refinement stage to remove residual noisy pixels and improve visual quality~\cite{ma2018tsf,thanh2020two,dash2015high}. Adaptive type-2 fuzzy and Riesz-mean filters also reinforce the continued interest in local impulse-aware models, especially for high-density salt-and-pepper noise~\cite{singh2018adaptive,islam2025adaptive}. Although these methods are effective in many cases, they generally remain constrained by local neighborhoods, which motivates the integration of impulse-aware rules with non-local patch aggregation.
+\pt{Outros filtros recentes para ruído sal-e-pimenta continuam explorando reconstrução local adaptativa, restauração iterativa e regras híbridas baseadas em decisão. Abordagens iterativas por média ponderada estimam pixels corrompidos por meio de detecção repetida e reconstrução ponderada, buscando reduzir borramento sob corrupção de alta densidade~\cite{chen2020iterative}. Estratégias em dois estágios e em cascata combinam uma primeira etapa de detecção ou restauração grosseira com uma segunda etapa de refinamento para remover pixels ruidosos residuais e melhorar a qualidade visual~\cite{ma2018tsf,thanh2020two,dash2015high}. Filtros adaptativos baseados em fuzzy tipo-2 e média de Riesz também reforçam o interesse contínuo em modelos locais orientados a impulsos, especialmente para ruído sal-e-pimenta de alta densidade~\cite{singh2018adaptive,islam2025adaptive}. Embora esses métodos sejam eficazes em muitos casos, geralmente permanecem limitados por vizinhanças locais, o que motiva a integração de regras orientadas a impulsos com agregação não local entre patches.}
+
+Non-Local Means (\nlm) and their variants exploit patch redundancy to improve denoising quality. The classical \nlm filter compares patches using Euclidean distances and reconstructs each pixel as a weighted average of similar pixels. This non-local strategy is effective for preserving repeated structures and textures, but standard \nlm was mainly designed for additive Gaussian noise. Under impulsive corruption, patch distances and weighted aggregation may be dominated by extreme-valued pixels, reducing the reliability of both the similarity measure and the final estimate.
+\pt{O Non-Local Means (\nlm) e suas variantes exploram a redundância entre patches para melhorar a qualidade da remoção de ruído. O filtro \nlm clássico compara patches usando distâncias Euclidianas e reconstrói cada pixel como uma média ponderada de pixels semelhantes. Essa estratégia não local é eficaz para preservar estruturas repetidas e texturas, mas o \nlm padrão foi projetado principalmente para ruído Gaussiano aditivo. Sob corrupção impulsiva, as distâncias entre patches e a agregação ponderada podem ser dominadas por pixels de valores extremos, reduzindo a confiabilidade tanto da medida de similaridade quanto da estimativa final.}
+
+The need to adapt non-local restoration to the noise model has been recognized in several contexts. Probabilistic patch weights provide a framework beyond a fixed Euclidean similarity rule~\cite{deledalle2009iterative}, while mixed Gaussian and random-valued impulse noise has also motivated specialized restoration methods~\cite{xing2022efficient}. For salt-and-pepper corruption, switching non-local methods explicitly address impulse detection and selective reconstruction~\cite{nasri2013snlm,zhang2013decision}. These are distinct degradation models, and performance on one does not establish effectiveness on another.
+\pt{A necessidade de adaptar a restauração não local ao modelo de ruído foi reconhecida em diferentes contextos. Pesos probabilísticos entre patches oferecem uma estrutura além de uma regra fixa de similaridade Euclidiana~\cite{deledalle2009iterative}, enquanto ruído misto Gaussiano e impulsivo de valores aleatórios também motivou métodos especializados~\cite{xing2022efficient}. Para corrupção sal-e-pimenta, métodos não locais com chaveamento tratam explicitamente da detecção de impulsos e da reconstrução seletiva~\cite{nasri2013snlm,zhang2013decision}. Esses são modelos de degradação distintos, e desempenho em um deles não estabelece eficácia em outro.}
+
+
+Several non-local methods have been adapted specifically to impulse and salt-and-pepper noise. SNLM~\cite{nasri2013snlm} proposed a switching non-local means filter for high-density salt-and-pepper noise, preserving noise-free pixels and restoring corrupted pixels through a modified non-local formulation. Zhang et al.~\cite{zhang2013decision} introduced a decision-based non-local means filter for impulse noise removal, combining impulse detection with image-based non-local reconstruction. Varghese et al.~\cite{varghese2015adaptive} proposed an adaptive switching non-local filter that alternates between a detail-preserving non-local mode and a local restoration mode. More recently, NAMF~\cite{zhang2021namf} proposed a non-local adaptive mean filter for salt-and-pepper noise removal using adaptive detection and non-local reconstruction. Together, these works show that combining switching decisions with non-local restoration is a promising direction for impulse noise, but there remains room for lightweight formulations that explicitly combine candidate rejection, spatial weighting, fallback restoration, and patch-based aggregation.
+\pt{Diversos métodos não locais foram adaptados especificamente para ruído impulsivo e sal-e-pimenta. O SNLM~\cite{nasri2013snlm} propôs um filtro switching non-local means para ruído sal-e-pimenta de alta densidade, preservando pixels livres de ruído e restaurando pixels corrompidos por meio de uma formulação não local modificada. Zhang et al.~\cite{zhang2013decision} introduziram um filtro decision-based non-local means para remoção de ruído impulsivo, combinando detecção de impulsos com reconstrução não local baseada na imagem. Varghese et al.~\cite{varghese2015adaptive} propuseram um filtro adaptive switching non-local que alterna entre um modo não local preservador de detalhes e um modo local de restauração. Mais recentemente, o NAMF~\cite{zhang2021namf} propôs um non-local adaptive mean filter para remoção de ruído sal-e-pimenta usando detecção adaptativa e reconstrução não local. Em conjunto, esses trabalhos mostram que combinar decisões de chaveamento com restauração não local é uma direção promissora para ruído impulsivo, mas ainda há espaço para formulações leves que combinem explicitamente rejeição de candidatos, ponderação espacial, restauração por fallback e agregação baseada em patches.}
+
+
+Non-local median methods replace or complement the mean aggregation of \nlm with robust median-based statistics. The Non-Local Medians filter proposed by Levada~\cite{NLMedians} was designed for joint Gaussian and impulsive image denoising. Median-based aggregation can reduce sensitivity to extreme observations, but does not by itself ensure selective preservation of clean pixels or distinguish an impulse from a legitimate endpoint intensity.
+\pt{Métodos de mediana não local substituem ou complementam a agregação por média do \nlm com estatísticas robustas baseadas em mediana. O filtro Non-Local Medians proposto por Levada~\cite{NLMedians} foi projetado para remoção conjunta de ruído Gaussiano e impulsivo em imagens. A agregação baseada em mediana pode reduzir a sensibilidade a observações extremas, mas não garante, por si só, preservação seletiva de pixels limpos nem distingue um impulso de uma intensidade legítima nos extremos.}
+
+Graph-based and manifold-aware non-local methods provide another related direction. These methods model image patches as nodes in a graph and use graph distances to describe patch relationships. GEO-NLM~\cite{carvalho2026geo}, for example, replaces direct Euclidean patch distances with geodesic distances computed on local weighted patch graphs. This strategy allows patch similarity to follow the intrinsic geometry of the patch space rather than relying only on direct Euclidean comparisons. However, GEO-NLM was originally designed as a general-purpose denoising method and does not explicitly exploit the binary impulse structure of salt-and-pepper noise.
+\pt{Métodos não locais baseados em grafos e orientados a variedades constituem outra direção relacionada. Esses métodos modelam patches da imagem como nós de um grafo e usam distâncias no grafo para descrever relações entre patches. O GEO-NLM~\cite{carvalho2026geo}, por exemplo, substitui distâncias Euclidianas diretas entre patches por distâncias geodésicas computadas em grafos locais ponderados de patches. Essa estratégia permite que a similaridade entre patches siga a geometria intrínseca do espaço de patches em vez de depender apenas de comparações Euclidianas diretas. Entretanto, o GEO-NLM foi originalmente projetado como um método geral de denoising e não explora explicitamente a estrutura impulsiva binária do ruído sal-e-pimenta.}
+
+The motivation for graph-based patch distances is connected to manifold learning. Isomap and locally linear embedding describe nonlinear low-dimensional structure in high-dimensional data~\cite{tenenbaum2000global,roweis2000nonlinear}. Non-local sparse restoration~\cite{mairal2009non} and processing of manifold-valued images~\cite{laus2017nonlocal,pennec2020manifold} provide related but distinct contexts; they are not all geodesic-distance methods for scalar grayscale patches. Here, GHNLM is used to pose a controlled question about the distance model, not to presume an advantage of graph geometry.
+\pt{A motivação para distâncias entre patches baseadas em grafos está conectada ao aprendizado de variedades. Isomap e locally linear embedding descrevem estruturas não lineares de baixa dimensão em dados de alta dimensão~\cite{tenenbaum2000global,roweis2000nonlinear}. A restauração esparsa não local~\cite{mairal2009non} e o processamento de imagens com valores em variedades~\cite{laus2017nonlocal,pennec2020manifold} oferecem contextos relacionados, mas distintos; nem todos são métodos de distância geodésica para patches escalares em tons de cinza. Aqui, o GHNLM formula uma questão controlada sobre o modelo de distância, sem presumir uma vantagem da geometria de grafos.}
+
+
+Overall, previous works motivate impulse detection, candidate rejection, switching restoration, and robust non-local reconstruction. The present work combines these principles in a compact formulation inspired by ASWMF and NLM, extending the endpoint rules through $\tau$. These ingredients individually have precedents; the contribution must be assessed as a specific formulation and experimental comparison rather than as the first use of switching in non-local denoising.
+\pt{De modo geral, os trabalhos anteriores motivam detecção de impulsos, rejeição de candidatos, restauração com chaveamento e reconstrução não local robusta. Este trabalho combina esses princípios em uma formulação compacta inspirada no ASWMF e no NLM, estendendo as regras dos extremos por meio de $\tau$. Esses componentes têm precedentes individualmente; a contribuição deve ser avaliada como uma formulação específica e uma comparação experimental, e não como o primeiro uso de chaveamento no denoising não local.}
+
+
+Recent works also show that \nlm remains an active component in modern and hybrid denoising pipelines, especially in medical and scientific imaging. Kong et al.~\cite{Kong2024INLMCT} proposed an improved \nlm algorithm for CT image denoising, incorporating additional structural information into the weight computation. Zhang~\cite{Zhang2025AIMSTVNL} integrated total variation, anisotropic diffusion, and non-local means into an adaptive denoising model designed to reduce over-smoothing and preserve edge structures. Taassori and Vizvári~\cite{taassori2024enhancing} combined adaptive Kalman filtering, median filtering, and \nlm in a hybrid medical-image denoising framework. Similarly, Sharma et al.~\cite{sharma2025detail} used adaptive clustering, PCA-based thresholding, and \nlm for CT and MRI denoising, while Lepcha et al.~\cite{lepcha2025low} incorporated pixel-level non-local self-similarity with \nlm for low-dose CT denoising. These works reinforce the continued relevance of \nlm, but they mainly address medical or Gaussian-like degradation models rather than salt-and-pepper impulse corruption.
+\pt{Trabalhos recentes também mostram que o \nlm permanece como um componente ativo em pipelines modernos e híbridos de denoising, especialmente em imagens médicas e científicas. Kong et al.~\cite{Kong2024INLMCT} propuseram um algoritmo \nlm melhorado para remoção de ruído em imagens de CT, incorporando informação estrutural adicional ao cálculo dos pesos. Zhang~\cite{Zhang2025AIMSTVNL} integrou variação total, difusão anisotrópica e non-local means em um modelo adaptativo de denoising projetado para reduzir suavização excessiva e preservar estruturas de borda. Taassori e Vizvári~\cite{taassori2024enhancing} combinaram filtragem de Kalman adaptativa, filtro de mediana e \nlm em uma estrutura híbrida de denoising para imagens médicas. De modo semelhante, Sharma et al.~\cite{sharma2025detail} usaram clustering adaptativo, limiarização baseada em PCA e \nlm para denoising de CT e MRI, enquanto Lepcha et al.~\cite{lepcha2025low} incorporaram autossimilaridade não local em nível de pixel com \nlm para denoising de CT de baixa dose. Esses trabalhos reforçam a relevância contínua do \nlm, mas tratam principalmente de imagens médicas ou modelos de degradação semelhantes ao ruído Gaussiano, e não de corrupção impulsiva sal-e-pimenta.}
+
+
+\section{Impulse-Aware and Robust Non-Local Restoration}
+\label{sec:impulse_background}
+
+This section first presents the original endpoint impulse model and the switching and candidate-rejection principles used by ASWMF. We then extend the detection rule through a configurable tolerance and discuss how the same rule is represented on different intensity scales.
+\pt{Esta seção apresenta primeiro o modelo original de impulsos nos extremos e os princípios de chaveamento e rejeição de candidatos usados pelo ASWMF. Em seguida, estendemos a regra de detecção por meio de uma tolerância configurável e discutimos como a mesma regra é representada em diferentes escalas de intensidade.}
+
+\subsection{Original Salt-and-Pepper Formulation}
+\label{subsec:strict_impulse_model}
+
+Salt-and-pepper noise is an impulsive degradation model in which the observed image $y$ is obtained from a clean image $x$ by replacing a subset of pixels with extreme intensity values~\cite{esakkirajan2011removal}. For 8-bit grayscale intensities in $[0,255]$, the original corruption model is
+\pt{O ruído sal-e-pimenta é um modelo de degradação impulsiva no qual a imagem observada $y$ é obtida de uma imagem limpa $x$ pela substituição de um subconjunto de pixels por valores extremos de intensidade~\cite{esakkirajan2011removal}. Para intensidades em tons de cinza de 8 bits em $[0,255]$, o modelo original de corrupção é}
+\begin{equation}
+y(i)=\begin{cases}
+0, & \text{with probability }p/2,\\
+255, & \text{with probability }p/2,\\
+x(i), & \text{with probability }1-p.
+\end{cases}
+\label{eq:sp_model}
+\end{equation}
+Here, $p$ is the total noise density, with equal probabilities for pepper and salt. The associated endpoint detector classifies a pixel as an impulse candidate when its observed value is 0 or 255:
+\pt{Aqui, $p$ é a densidade total de ruído, com probabilidades iguais para pimenta e sal. O detector associado aos extremos classifica um pixel como candidato a impulso quando seu valor observado é 0 ou 255:}
+\begin{equation}
+M_0(i)=\mathbf{1}\{y(i)\in\{0,255\}\}.
+\label{eq:strict_impulse_mask}
+\end{equation}
+This is a detection rule, not a ground-truth corruption label: a clean pixel can also have an endpoint intensity.
+\pt{Essa é uma regra de detecção, e não um rótulo verdadeiro de corrupção: um pixel limpo também pode ter intensidade em um dos extremos.}
+
+For the band-valued model, let $B_b^{-}$ and $B_b^{+}$ take values in $[0,b]$ and $[255-b,255]$, respectively. A marginal corruption model is
+\pt{Para o modelo de valores em faixas, sejam $B_b^{-}$ e $B_b^{+}$ variáveis com valores em $[0,b]$ e $[255-b,255]$, respectivamente. Um modelo marginal de corrupção é}
+\begin{equation}
+y_b(i)=\begin{cases}
+B_b^{-}(i), & \text{with probability }p/2,\\
+B_b^{+}(i), & \text{with probability }p/2,\\
+x(i), & \text{with probability }1-p.
+\end{cases}
+\label{eq:band_noise_model}
+\end{equation}
+The draft describes uniform integer draws within each band. This distribution and the mechanism for selecting positions must be verified in the generator. A fixed number of sampled positions is not an independent Bernoulli mask, even if the nominal density is the same. An assigned impulse can equal the clean intensity, so assignment and actual intensity change must also be distinguished.
+\pt{O rascunho descreve sorteios uniformes inteiros dentro de cada faixa. Essa distribuição e o mecanismo de seleção das posições precisam ser verificados no gerador. Um número fixo de posições amostradas não constitui uma máscara Bernoulli independente, mesmo com a mesma densidade nominal. Um impulso atribuído pode ser igual à intensidade limpa, portanto também é necessário distinguir atribuição de alteração efetiva da intensidade.}
+
+
+\subsection{Switching and Candidate Rejection in ASWMF}
+\label{subsec:aswmf_principles}
+
+This model motivates switching restoration: pixels classified as reliable are copied to the output, while detected impulses are restored~\cite{wang1999progressive}. ASWMF uses endpoint detection and excludes samples with values 0 or 255 from its weighted local reconstruction~\cite{thanh2020adaptive}. Writing $\Omega_i$ for a neighborhood of the target pixel, the admissible set under the original rule is
+\pt{Esse modelo motiva a restauração com chaveamento: pixels classificados como confiáveis são copiados para a saída, enquanto impulsos detectados são restaurados~\cite{wang1999progressive}. O ASWMF utiliza detecção nos extremos e exclui amostras com valores 0 ou 255 de sua reconstrução local ponderada~\cite{thanh2020adaptive}. Denotando por $\Omega_i$ uma vizinhança do pixel alvo, o conjunto admissível sob a regra original é}
+\begin{equation}
+\Omega_i^{*,0}=\{j\in\Omega_i\mid y(j)\notin\{0,255\}\}.
+\label{eq:valid_candidates_background}
+\end{equation}
+The proposed IANLM transfers these switching and candidate-rejection principles to patch-based restoration. We retain the original endpoint rule as its zero-tolerance case. The extension below modifies the detection and admissibility rules; it is not attributed to the original ASWMF formulation.
+\pt{O IANLM proposto transfere esses princípios de chaveamento e rejeição de candidatos para a restauração baseada em patches. Mantemos a regra original nos extremos como seu caso de tolerância zero. A extensão a seguir modifica as regras de detecção e admissibilidade; ela não é atribuída à formulação original do ASWMF.}
+
+\subsection{Extension to Near-Extreme Impulses}
+\label{subsec:tolerance_extension}
+
+To accommodate values near the intensity extremes, we introduce a configurable tolerance $\tau$ in the $[0,255]$ representation, with $0\leq\tau<255/2$ so that the two bands do not cover the entire range. The extended detector and candidate set are
+\pt{Para contemplar valores próximos dos extremos de intensidade, introduzimos uma tolerância configurável $\tau$ na representação $[0,255]$, com $0\leq\tau<255/2$ para que as duas faixas não cubram toda a escala. O detector estendido e o conjunto de candidatos são}
+\begin{equation}
+M_\tau(i)=\mathbf{1}\{y(i)\leq\tau\ \lor\ y(i)\geq255-\tau\},
+\label{eq:tolerant_impulse_mask}
+\end{equation}
+\begin{equation}
+\Omega_i^{*,\tau}=\{j\in\Omega_i\mid M_\tau(j)=0\}.
+\label{eq:tolerant_valid_candidates}
+\end{equation}
+For inputs within $[0,255]$, setting $\tau=0$ gives $M_\tau=M_0$ and $\Omega_i^{*,\tau}=\Omega_i^{*,0}$, exactly recovering the original detection and candidate-rejection rules. At $\tau=4$, the detected bands become $[0,4]$ and $[251,255]$. The same mask is used to select target pixels and reject candidate centers.
+\pt{Para entradas em $[0,255]$, definir $\tau=0$ fornece $M_\tau=M_0$ e $\Omega_i^{*,\tau}=\Omega_i^{*,0}$, recuperando exatamente as regras originais de detecção e rejeição de candidatos. Em $\tau=4$, as faixas detectadas passam a ser $[0,4]$ e $[251,255]$. A mesma máscara é usada para selecionar os pixels alvo e rejeitar centros de candidatos.}
+
+The noise-generation band width and the detector tolerance describe different aspects of the experiment. We denote the former by $b$ and the latter by $\tau$. The author-reported comparison uses matched settings $b=\tau\in\{0,4\}$, changing both the noisy observation and the detector. It is therefore not a detector-only ablation. Earlier mentions of tests at $\tau=1,2,3$ cannot be confirmed from this project and are not used as evidence.
+\pt{A largura da faixa de geração do ruído e a tolerância do detector descrevem aspectos diferentes do experimento. Denotamos a primeira por $b$ e a segunda por $\tau$. A comparação informada pelo autor usa configurações correspondentes $b=\tau\in\{0,4\}$, alterando tanto a observação ruidosa quanto o detector. Portanto, não é uma ablação apenas do detector. Menções anteriores a testes em $\tau=1,2,3$ não podem ser confirmadas neste projeto e não são usadas como evidência.}
+
+\subsection{Intensity Range and Floating-Point Representation}
+\label{subsec:intensity_representation}
+
+The storage type (\texttt{dtype}) and the intensity range are distinct properties. Converting an array from \texttt{uint8} to \texttt{float32} does not by itself rescale its intensities: the floating-point array may still represent values in $[0,255]$. Consequently, $L$ and $U$ must follow the declared image representation, rather than being inferred from the floating-point type or from the minimum and maximum observed in each image.
+\pt{O tipo de armazenamento (\texttt{dtype}) e a faixa de intensidade são propriedades distintas. Converter um array de \texttt{uint8} para \texttt{float32} não reescala, por si só, suas intensidades: o array de ponto flutuante ainda pode representar valores em $[0,255]$. Consequentemente, $L$ e $U$ devem seguir a representação declarada da imagem, em vez de serem inferidos do tipo de ponto flutuante ou do mínimo e máximo observados em cada imagem.}
+
+For a declared range $[L,U]$, with $U>L$, let $\delta$ be a tolerance expressed in the same intensity units as $y$, with $0\leq\delta<(U-L)/2$. We define the detection mask and admissible candidate set as
+\pt{Para uma faixa declarada $[L,U]$, com $U>L$, seja $\delta$ uma tolerância expressa nas mesmas unidades de intensidade de $y$, com $0\leq\delta<(U-L)/2$. Definimos a máscara de detecção e o conjunto de candidatos admissíveis como}
+\begin{equation}
+M_\delta(i)=\mathbf{1}\{y(i)\leq L+\delta\ \lor\ y(i)\geq U-\delta\},
+\label{eq:range_impulse_mask}
+\end{equation}
+\begin{equation}
+\Omega_i^{*}=\{j\in\Omega_i\mid M_\delta(j)=0\},
+\label{eq:valid_candidates_range}
+\end{equation}
+where $\Omega_i$ denotes the search region. The switching rule copies $y(i)$ to the output when $M_\delta(i)=0$ and restores pixels with $M_\delta(i)=1$. At $\delta=0$, this recovers strict endpoint detection for inputs within $[L,U]$. These are detection decisions, not ground-truth corruption labels: clean pixels near the extremes can also be selected for restoration. Candidate rejection applies to candidate centers; it does not remove all detected impulse entries from the patches used for similarity computation.
+\pt{em que $\Omega_i$ denota a região de busca. A regra de chaveamento copia $y(i)$ para a saída quando $M_\delta(i)=0$ e restaura pixels com $M_\delta(i)=1$. Em $\delta=0$, recupera-se a detecção estrita nos extremos para entradas em $[L,U]$. Essas são decisões de detecção, e não rótulos verdadeiros de corrupção: pixels limpos próximos dos extremos também podem ser selecionados para restauração. A rejeição de candidatos atua nos centros dos candidatos; ela não remove todas as posições detectadas como impulsos dos patches usados no cálculo de similaridade.}
+
+A dimensionless tolerance $\rho=\delta/(U-L)$ expresses the same rule independently of the intensity scale. Under the normalization $z(i)=(y(i)-L)/(U-L)$, the equivalent mask is
+\pt{Uma tolerância adimensional $\rho=\delta/(U-L)$ expressa a mesma regra independentemente da escala de intensidade. Sob a normalização $z(i)=(y(i)-L)/(U-L)$, a máscara equivalente é}
+\begin{equation}
+M_\rho(i)=\mathbf{1}\{z(i)\leq\rho\ \lor\ z(i)\geq1-\rho\}.
+\label{eq:normalized_impulse_mask}
+\end{equation}
+In the declared protocol, $\tau$ denotes the tolerance in $[0,255]$ intensity units, so that $\delta=\tau$ in that representation and $\rho=\tau/255$. Thus, $\tau=4$ corresponds to $4/255\approx0.015686$ for normalized intensities, not to a tolerance of 4 on $[0,1]$. Table~\ref{tab:range_tolerance} summarizes these equivalent representations.
+\pt{No protocolo declarado, $\tau$ denota a tolerância em unidades de intensidade de $[0,255]$, de modo que $\delta=\tau$ nessa representação e $\rho=\tau/255$. Assim, $\tau=4$ corresponde a $4/255\approx0.015686$ para intensidades normalizadas, e não a uma tolerância de 4 em $[0,1]$. A Tabela~\ref{tab:range_tolerance} resume essas representações equivalentes.}
+
+\begin{table}[t]
+\centering
+\caption{Equivalent detection bands for the experimental tolerance $\tau=4$.}
+\label{tab:range_tolerance}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lll}
+\toprule
+Representation & Range & Detected bands \\
+\midrule
+\texttt{uint8} & $[0,255]$ & $[0,4]\cup[251,255]$ \\
+Float, unscaled & $[0,255]$ & $[0,4]\cup[251,255]$ \\
+Float, normalized & $[0,1]$ & $[0,4/255]\cup[251/255,1]$ \\
+\bottomrule
+\end{tabular}
+\pt{Faixas de detecção equivalentes para a tolerância experimental $\tau=4$. Um array de ponto flutuante sem reescala utiliza as mesmas faixas do array \texttt{uint8}; um array normalizado exige a conversão dos limiares.}
+\end{table}
+
+The smoothing parameter must also be rescaled. For the Euclidean patch weight $\exp(-\lVert y(\eta_i)-y(\eta_j)\rVert_2^2/h_y^2)$, equivalent weights in normalized coordinates require
+\pt{O parâmetro de suavização também deve ser reescalado. Para o peso Euclidiano entre patches $\exp(-\lVert y(\eta_i)-y(\eta_j)\rVert_2^2/h_y^2)$, pesos equivalentes em coordenadas normalizadas exigem}
+\begin{equation}
+h_z=\frac{h_y}{U-L}.
+\label{eq:h_range_conversion}
+\end{equation}
+In particular, the experimental setting $h_y=1$ on $[0,255]$ corresponds to $h_z=1/255$ on $[0,1]$. This is an algebraic equivalence of the weighting rule, not a claim of bitwise equivalence between implementations with different rounding or floating-point precision.
+\pt{Em particular, a configuração experimental $h_y=1$ em $[0,255]$ corresponde a $h_z=1/255$ em $[0,1]$. Essa é uma equivalência algébrica da regra de ponderação, e não uma afirmação de equivalência bit a bit entre implementações com diferentes arredondamentos ou precisões de ponto flutuante.}
+
+The revised protocol specifies floating-point calculations on $[0,255]$, not implicit normalization. The actual input conversion, clipping, rounding, and output storage must be checked in the experimental scripts. The normalized formulation above states an algebraic conversion and does not establish that the current implementation accepts arbitrary ranges. The equivalence of geodesic weights also requires edge lengths in the same intensity units as the Euclidean norm.
+\pt{O protocolo revisado especifica cálculos em ponto flutuante em $[0,255]$, e não normalização implícita. A conversão de entrada, o clipping, o arredondamento e o armazenamento da saída precisam ser conferidos nos scripts experimentais. A formulação normalizada acima estabelece uma conversão algébrica e não demonstra que a implementação atual aceite faixas arbitrárias. A equivalência dos pesos geodésicos também exige comprimentos de arestas nas mesmas unidades de intensidade da norma Euclidiana.}
+
+
+The tolerance is configurable beyond the two principal settings. However, a larger value can classify legitimate dark or bright pixels as impulses and remove useful candidate centers. The restriction that the bands remain separated is only a mathematical admissibility condition, not a validated operating range. No tolerance above 4 is recommended on the basis of the available records, which cover only 0 and 4.
+\pt{A tolerância é configurável além das duas configurações principais. Entretanto, um valor maior pode classificar pixels escuros ou claros legítimos como impulsos e remover centros de candidatos úteis. A restrição de que as faixas permaneçam separadas é apenas uma condição matemática de admissibilidade, não uma faixa operacional validada. Nenhuma tolerância acima de 4 é recomendada com base nos registros experimentais disponíveis, que cobrem apenas 0 e 4.}
+
+\section{The Non-Local Means Filter}
+\label{sec:nlm}
+
+
+The Non-Local Means filter, introduced by Buades et al.~\cite{buades2005nlm}, is a patch-based denoising method that takes advantage of self-similarity in images. Instead of estimating a pixel only from a small local neighborhood, \nlm searches for pixels whose surrounding patches have similar appearance. The restored value is then obtained as a weighted average of the corresponding candidate pixels.
+\pt{O filtro Non-Local Means, introduzido por Buades et al.~\cite{buades2005nlm}, é um método de denoising baseado em patches que explora a auto-similaridade em imagens. Em vez de estimar um pixel apenas a partir de uma pequena vizinhança local, o \nlm busca pixels cujos patches ao redor apresentam aparência semelhante. O valor restaurado é então obtido como uma média ponderada dos pixels candidatos correspondentes.}
+
+Let \(y=\{y(i)\mid i\in I\}\) be a noisy image, where \(I\) denotes the image domain. For a target pixel \(i\), let \(\eta_i\) be the patch centered at \(i\), and let \(\Omega_i\) be a finite search window around \(i\). The \nlm estimate \(\hat{x}(i)\) is given by
+\pt{Seja \(y=\{y(i)\mid i\in I\}\) uma imagem ruidosa, em que \(I\) denota o domínio da imagem. Para um pixel alvo \(i\), seja \(\eta_i\) o patch centrado em \(i\), e seja \(\Omega_i\) uma janela de busca finita ao redor de \(i\). A estimativa NLM \(\hat{x}(i)\) é dada por}
+\begin{equation}
+    \hat{x}(i)
+    =
+    \frac{
+    \sum_{j\in\Omega_i} w(i,j)y(j)
+    }{
+    \sum_{j\in\Omega_i} w(i,j)
+    },
+    \label{eq:nlm_estimate}
+\end{equation}
+where \(w(i,j)\) measures the similarity between the patches centered on the pixels \(i\) and \(j\). In the classical formulation, this similarity weight is computed as
+\pt{em que \(w(i,j)\) mede a similaridade entre os patches centrados nos pixels \(i\) e \(j\). Na formulação clássica, esse peso de similaridade é calculado como}
+\begin{equation}
+    w(i,j)
+    =
+    \exp
+    \left(
+    -
+    \frac{
+    \|y(\eta_i)-y(\eta_j)\|_2^2
+    }{
+    h^2
+    }
+    \right),
+    \label{eq:nlm_weight}
+\end{equation}
+where \(h\) is the filtering parameter that controls the decay of the exponential function. Several variants have modified this basic formulation by changing the aggregation strategy, the similarity measure, or the filtering sequence; for example, recent two-step approaches combine pixel-wise and patch-wise \nlm stages to improve denoising performance~\cite{zhang2025two}.
+\pt{em que \(h\) é o parâmetro de filtragem que controla o decaimento da função exponencial. Diversas variantes modificaram essa formulação básica alterando a estratégia de agregação, a medida de similaridade ou a sequência de filtragem; por exemplo, abordagens recentes em duas etapas combinam estágios NLM pixel-wise e patch-wise para melhorar o desempenho de denoising~\cite{zhang2025two}.}
+
+
+\begin{algorithm}[!t]
+    \caption{Classical Non-Local Means filter}
+    \label{alg:nlm}
+    \begin{algorithmic}[1]
+        \Require Noisy image \(y\), search window \(\Omega_i\), patch radius \(f\), filtering parameter \(h\)
+        \Ensure Denoised image \(\hat{x}\)
+        \For{each pixel \(i\) in \(y\)}
+            \State Initialize \(W(i) \gets 0\)
+            \State Initialize \(Z(i) \gets 0\)
+            \For{each candidate pixel \(j \in \Omega_i\)}
+                \State Extract patches \(\eta_i\) and \(\eta_j\)
+                \State Compute \(w(i,j)\) using Eq.~\eqref{eq:nlm_weight}
+                \State Update \(W(i) \gets W(i)+w(i,j)y(j)\)
+                \State Update \(Z(i) \gets Z(i)+w(i,j)\)
+            \EndFor
+            \State Set \(\hat{x}(i) \gets W(i)/Z(i)\)
+        \EndFor
+        \State \Return \(\hat{x}\)
+    \end{algorithmic}
+\end{algorithm}
+
+The main strength of \nlm is its ability to exploit redundancy and self-similarity in natural images. However, for salt-and-pepper noise, impulse pixels take extreme values and may contaminate both patch comparison and pixel aggregation. Therefore, a method designed for this noise model must not only exploit non-local similarity, but also detect and reject impulsive candidates.
+\pt{A principal força do \nlm é sua capacidade de explorar redundância e auto-similaridade em imagens naturais. Entretanto, para ruído sal-e-pimenta, pixels impulsivos assumem valores extremos e podem contaminar tanto a comparação entre patches quanto a agregação de pixels. Portanto, um método projetado para esse modelo de ruído deve não apenas explorar similaridade não local, mas também detectar e rejeitar candidatos impulsivos.}
+
+
+For the direct formula above, $h>0$ and the squared patch distance is written as a sum, not a mean. We use $f$ for patch radius and $t$ for search radius, giving nominal sizes $(2f+1)^2$ and $(2t+1)^2$ away from boundaries. Thus, compact NLM with $f=1,t=3$ uses $3\times3$ patches within a nominal $7\times7$ search region. Matching these sizes does not make standard NLM impulse-aware: it still filters every target and does not apply $M_\tau$.
+\pt{Na fórmula direta acima, $h>0$ e a distância quadrática entre patches é escrita como soma, não como média. Usamos $f$ para o raio do patch e $t$ para o raio de busca, fornecendo tamanhos nominais $(2f+1)^2$ e $(2t+1)^2$ longe das bordas. Assim, o NLM compacto com $f=1,t=3$ usa patches $3\times3$ em uma região nominal de busca $7\times7$. Igualar esses tamanhos não torna o NLM padrão orientado a impulsos: ele continua filtrando todos os alvos e não aplica $M_\tau$.}
+
+Inspecting the reference implementation fixes these conventions. The patch distance is the \emph{unnormalized} squared Euclidean sum $\|y(\eta_i)-y(\eta_j)\|_2^2=\sum_{u,v}\big(y(i+u,j+v)-y(j'+u,k'+v)\big)^2$ over the $(2f+1)^2$ patch offsets, matching Eq.~\eqref{eq:nlm_weight}: no division by patch size is applied, so $h$ absorbs the patch scale. The target pixel is included as its own candidate ($j=i$ contributes a zero-distance, unit weight), and aggregation uses the observed value $y(j)$ with normalizer $Z(i)=\sum_j w(i,j)$. Boundaries use mirror (symmetric) padding of width $f$ applied inside the kernel before filtering.
+\pt{A inspeção da implementação de referência fixa essas convenções. A distância entre patches é a soma quadrática euclidiana \emph{não normalizada} $\|y(\eta_i)-y(\eta_j)\|_2^2=\sum_{u,v}\big(y(i+u,j+v)-y(j'+u,k'+v)\big)^2$ sobre os $(2f+1)^2$ deslocamentos do patch, de acordo com a Eq.~\eqref{eq:nlm_weight}: não há divisão pelo tamanho do patch, de modo que $h$ absorve a escala do patch. O pixel alvo é incluído como seu próprio candidato ($j=i$ contribui com distância nula e peso unitário), e a agregação usa o valor observado $y(j)$ com normalizador $Z(i)=\sum_j w(i,j)$. As bordas usam preenchimento por espelhamento (simétrico) de largura $f$ aplicado dentro do kernel antes da filtragem.}
+
+The official results were produced by the CUDA backend \texttt{NLM\_fast\_cuda\_global}, recorded per record as \texttt{nlm\_backend}. Two indexing conventions must be distinguished. The CPU reference clips the search window to the padded domain, $r\in[\,\max(i{+}f{-}t,f),\,\min(i{+}f{+}t,m{+}f{-}1)\,]$, so it never reads outside the mirrored buffer. The CUDA kernel scans the full window $r\in[i{+}f{-}t,\,i{+}f{+}t]$ without clipping while padding only to width $f$. For the reported configuration $f=1,\,t=3$ this makes the search reach exceed the padding, so pixels within $t$ of a border index memory outside the width-$f$ mirrored buffer. The two backends therefore do not coincide near borders, and reproductions should either add padding of width $t{+}f$ (or clip the search range) to make the CUDA path match the clipped CPU reference before treating the two as interchangeable.
+\pt{Os resultados oficiais foram produzidos pelo backend CUDA \texttt{NLM\_fast\_cuda\_global}, registrado em cada registro como \texttt{nlm\_backend}. Duas convenções de indexação devem ser distinguidas. A referência em CPU recorta a janela de busca ao domínio preenchido, $r\in[\,\max(i{+}f{-}t,f),\,\min(i{+}f{+}t,m{+}f{-}1)\,]$, de modo que nunca lê fora do buffer espelhado. O kernel CUDA percorre a janela completa $r\in[i{+}f{-}t,\,i{+}f{+}t]$ sem recorte, embora o preenchimento tenha apenas largura $f$. Para a configuração reportada $f=1,\,t=3$, isso faz o alcance da busca exceder o preenchimento, de modo que pixels a até $t$ de uma borda indexam memória fora do buffer espelhado de largura $f$. Os dois backends, portanto, não coincidem próximo às bordas, e reproduções devem acrescentar preenchimento de largura $t{+}f$ (ou recortar a faixa de busca) para fazer o caminho CUDA coincidir com a referência em CPU recortada antes de tratá-los como intercambiáveis.}
+
+
+\section{The Proposed Impulse-Aware Non-Local Means Framework}
+\label{sec:method}
+
+\subsection{IANLM: Switching and Aggregation}
+\label{subsec:ianlm}
+
+Given a noisy image $y$, IANLM restores only targets detected by $M_\tau$. If $M_\tau(i)=0$, the pixel is classified as reliable and copied directly to the output. At $\tau=0$, this recovers the original endpoint rule $y(i)\notin\{0,255\}$; at $\tau=4$, the same structure uses the near-extreme bands.
+\pt{Dada uma imagem ruidosa $y$, o IANLM restaura apenas alvos detectados por $M_\tau$. Se $M_\tau(i)=0$, o pixel é classificado como confiável e copiado diretamente para a saída. Em $\tau=0$, isso recupera a regra original dos extremos $y(i)\notin\{0,255\}$; em $\tau=4$, a mesma estrutura usa as faixas próximas dos extremos.}
+\begin{equation}
+\hat{x}(i)=y(i)\quad\text{if }M_\tau(i)=0.
+\label{eq:ianlm_switching_clean}
+\end{equation}
+
+For each detected target, the candidate set is $\Omega_i^{*,\tau}$ from Eq.~\eqref{eq:tolerant_valid_candidates}. Rejection concerns candidate centers; it does not imply that all impulse entries inside a retained patch have been removed. In the direct formulation, the patch-similarity weight and its combination with a nonnegative spatial weight are
+\pt{Para cada alvo detectado, o conjunto de candidatos é $\Omega_i^{*,\tau}$ da Eq.~\eqref{eq:tolerant_valid_candidates}. A rejeição atua nos centros dos candidatos; ela não implica que todas as posições impulsivas dentro de um patch mantido tenham sido removidas. Na formulação direta, o peso de similaridade entre patches e sua combinação com um peso espacial não negativo são}
+\begin{equation}
+w_p(i,j)=\exp\left(-\frac{\|y(\eta_i)-y(\eta_j)\|_2^2}{h^2}\right),\qquad h>0,
+\label{eq:ianlm_patch_weight}
+\end{equation}
+\begin{equation}
+w(i,j)=w_p(i,j)w_s(i,j).
+\label{eq:ianlm_hybrid_weight}
+\end{equation}
+
+The original aggregation averages the observed candidate values $y(j)$. The later experimental description instead mentions robust candidate-center replacement. To distinguish these versions without conflating the manuscript versions, let $R_i(j)$ denote the value actually aggregated, with $R_i(j)=y(j)$ in the original formulation. This distinction does not by itself specify any modification to the patches used in Eq.~\eqref{eq:ianlm_patch_weight}.
+\pt{A agregação original calcula a média dos valores observados $y(j)$ dos candidatos. A descrição experimental posterior menciona, em vez disso, substituição robusta do centro dos candidatos. Para distinguir essas versões sem presumir uma implementação indisponível, seja $R_i(j)$ o valor efetivamente agregado, com $R_i(j)=y(j)$ na formulação original. Essa distinção não especifica, por si só, qualquer modificação nos patches usados na Eq.~\eqref{eq:ianlm_patch_weight}.}
+\begin{equation}
+\begin{aligned}
+Z_i&=\sum_{j\in\Omega_i^{*,\tau}}w(i,j),\\
+\hat{x}(i)&=\begin{cases}
+\displaystyle\frac{\sum_{j\in\Omega_i^{*,\tau}}w(i,j)R_i(j)}{Z_i},& Z_i>0,\\
+F_i(y,\tau),& Z_i=0,
+\end{cases}
+\end{aligned}
+\label{eq:ianlm_estimate}
+\end{equation}
+
+Here, $F_i$ denotes the local fallback. Nonnegative finite weights give $Z_i\geq0$, but an empty candidate set is not the only reason for a zero sum: all computed exponential weights may underflow even when candidates exist. The numerical implementation must test the normalizer before division and identify non-finite weights as failures rather than treating them as valid averages. The fallback operator itself remains to be matched to the experimental code.
+\pt{Aqui, $F_i$ denota o fallback local. Pesos finitos não negativos fornecem $Z_i\geq0$, mas um conjunto vazio não é a única causa de soma nula: todos os pesos exponenciais calculados podem sofrer underflow mesmo quando existem candidatos. A implementação numérica deve testar o normalizador antes da divisão e identificar pesos não finitos como falhas, em vez de tratá-los como médias válidas. O próprio operador de fallback ainda precisa ser associado ao código experimental.}
+
+The three operators left abstract above are fixed by the reference implementation as follows. Let a candidate center $j$ have an $f$-radius patch with median $\mu_j$ and (population) standard deviation $\sigma_j$. With $z_\alpha=1.96$ and outlier-mixing coefficient $\alpha_{\mathrm{out}}=0$, the aggregated value is the robust candidate-center replacement
+\pt{Os três operadores deixados abstratos acima são fixados pela implementação de referência da forma a seguir. Seja um centro candidato $j$ com um patch de raio $f$ de mediana $\mu_j$ e desvio-padrão (populacional) $\sigma_j$. Com $z_\alpha=1.96$ e coeficiente de mistura de outliers $\alpha_{\mathrm{out}}=0$, o valor agregado é a substituição robusta do centro do candidato}
+\begin{equation}
+R_i(j)=
+\begin{cases}
+y(j), & \mu_j-z_\alpha\sigma_j < y(j) < \mu_j+z_\alpha\sigma_j,\\[2pt]
+\alpha_{\mathrm{out}}\,y(j)+(1-\alpha_{\mathrm{out}})\,\mu_j, & \text{otherwise,}
+\end{cases}
+\label{eq:ianlm_robust_center}
+\end{equation}
+so that with $\alpha_{\mathrm{out}}=0$ an out-of-band center is replaced by the patch median $\mu_j$. Crucially, $R_i(j)$ enters only the aggregation; the patch distance in Eq.~\eqref{eq:ianlm_patch_weight} still uses the raw noisy patches, consistent with the description above.
+\pt{de modo que, com $\alpha_{\mathrm{out}}=0$, um centro fora da banda é substituído pela mediana do patch $\mu_j$. Fundamentalmente, $R_i(j)$ entra apenas na agregação; a distância entre patches na Eq.~\eqref{eq:ianlm_patch_weight} continua usando os patches ruidosos crus, de acordo com a descrição acima.}
+
+The nonnegative spatial weight uses ASWMF-inspired coefficients $(1,1,10)$ over the search offsets $(d_i,d_j)=(r-i,s-j)$,
+\pt{O peso espacial não negativo usa coeficientes inspirados no ASWMF $(1,1,10)$ sobre os deslocamentos de busca $(d_i,d_j)=(r-i,s-j)$,}
+\begin{equation}
+w_s(i,j)=
+\begin{cases}
+1, & d_i=d_j \quad(\text{main diagonal}),\\
+1, & d_i+d_j=0 \quad(\text{anti-diagonal}),\\
+10, & \text{otherwise,}
+\end{cases}
+\label{eq:ianlm_spatial_weight}
+\end{equation}
+where $d_i=d_j$ is tested first, so the center offset receives weight $1$.
+\pt{onde $d_i=d_j$ é testado primeiro, de modo que o deslocamento central recebe peso $1$.}
+
+The fallback for $Z_i=0$ is a radius-$f$ ASWMF-weighted local mean restricted to non-impulsive neighbors $\mathcal{N}_f(i)\!\setminus\!\text{imp}$ (those with $\tau<y<255-\tau$),
+\pt{O fallback para $Z_i=0$ é uma média local ponderada pelo ASWMF de raio $f$ restrita aos vizinhos não impulsivos $\mathcal{N}_f(i)\!\setminus\!\text{imp}$ (aqueles com $\tau<y<255-\tau$),}
+\begin{equation}
+F_i(y,\tau)=
+\begin{cases}
+\dfrac{\displaystyle\sum_{k\in\mathcal{N}_f(i)\setminus\text{imp}} w_s(i,k)\,y(k)}
+      {\displaystyle\sum_{k\in\mathcal{N}_f(i)\setminus\text{imp}} w_s(i,k)},
+& \text{if a valid neighbor exists,}\\[2.2ex]
+\dfrac{1}{|\mathcal{N}_f(i)|}\displaystyle\sum_{k\in\mathcal{N}_f(i)} y(k),
+& \text{otherwise.}
+\end{cases}
+\label{eq:ianlm_fallback}
+\end{equation}
+
+Boundary handling mirrors the image with a border of width $f$ before filtering; the search window of half-width $t$ is clipped to the mirrored domain. Candidate centers that are themselves impulsive are rejected. The update is not in place: targets are read from the mirrored input and written to a separate output, while reliable pixels are copied unchanged. With $f=1$ and $t=3$, this uses a $3\times3$ patch and a $7\times7$ search window. Equations~\eqref{eq:ianlm_robust_center}--\eqref{eq:ianlm_fallback} therefore complete Eq.~\eqref{eq:ianlm_estimate} and Algorithm~\ref{alg:ianlm} into a fully reproducible specification.
+\pt{O tratamento de borda espelha a imagem com uma borda de largura $f$ antes da filtragem; a janela de busca de meia-largura $t$ é recortada ao domínio espelhado. Centros candidatos que são eles próprios impulsivos são rejeitados. A atualização não é in-place: os alvos são lidos da entrada espelhada e escritos em uma saída separada, enquanto os pixels confiáveis são copiados sem alteração. Com $f=1$ e $t=3$, usa-se um patch $3\times3$ e uma janela de busca $7\times7$. As Equações~\eqref{eq:ianlm_robust_center}--\eqref{eq:ianlm_fallback} portanto completam a Eq.~\eqref{eq:ianlm_estimate} e o Algoritmo~\ref{alg:ianlm} em uma especificação totalmente reproduzível.}
+
+\begin{algorithm}[!t]
+\caption{IANLM aggregation structure with configurable tolerance}
+\label{alg:ianlm}
+\begin{algorithmic}[1]
+\Require Image $y$ on $[0,255]$, $f,t$, $h>0$, $\tau$, operators $R,w_s,F$
+\Ensure Restored image $\hat{x}$
+\State Compute $M_\tau$ from the input image
+\For{each target $i$}
+    \If{$M_\tau(i)=0$}
+        \State $\hat{x}(i)\gets y(i)$
+    \Else
+        \State $A_i\gets0$; $Z_i\gets0$
+        \For{each $j\in\Omega_i$ with $M_\tau(j)=0$}
+            \State Compute $w(i,j)$ from Eqs.~\eqref{eq:ianlm_patch_weight}--\eqref{eq:ianlm_hybrid_weight}
+            \State $A_i\gets A_i+w(i,j)R_i(j)$
+            \State $Z_i\gets Z_i+w(i,j)$
+        \EndFor
+        \If{$Z_i>0$ and $Z_i,A_i$ are finite}
+            \State $\hat{x}(i)\gets A_i/Z_i$
+        \ElsIf{$Z_i=0$ and $A_i$ is finite}
+            \State $\hat{x}(i)\gets F_i(y,\tau)$
+        \Else
+            \State Flag a numerical failure for this condition
+        \EndIf
+    \EndIf
+\EndFor
+\State \Return $\hat{x}$ if no numerical failure occurred
+\end{algorithmic}
+\end{algorithm}
+The algorithm preserves pixels classified as reliable, combines patch and spatial weights over admissible candidates, and activates fallback for a zero normalizer. Its input-mask convention avoids silently assuming in-place restoration; correspondence with the implementation remains part of verification P03.
+\pt{O algoritmo preserva pixels classificados como confiáveis, combina pesos de patches e espaciais sobre candidatos admissíveis e ativa fallback para normalizador nulo. Sua convenção de máscara de entrada evita presumir silenciosamente restauração in-place; a correspondência com a implementação continua sendo parte da verificação P03.}
+
+\subsection{GHNLM: A Compact Geodesic Comparison}
+\label{subsec:ghnlm}
+
+GHNLM is the impulse-aware geodesic variant, not the general-purpose GNLM baseline. The revised comparison specifies $f=1$, $t=3$, and $k=7$ (also denoted $nn$). It is intended to retain the same intensity scale, target mask, candidate rejection, replacement, spatial weighting, and fallback as IANLM. The manuscript reports the same fixed $h=1$ for both; this is a matched setting, not separate optimization of the two distance models.
+\pt{O GHNLM é a variante geodésica orientada a impulsos, não o baseline GNLM de propósito geral. A comparação revisada especifica $f=1$, $t=3$ e $k=7$ (também denotado $nn$). Ela deve manter a mesma escala de intensidade, máscara de alvos, rejeição de candidatos, substituição, ponderação espacial e fallback do IANLM. O manuscrito informa o mesmo $h=1$ fixo para ambos; essa é uma configuração correspondente, não uma otimização separada dos dois modelos de distância.}
+
+The graph construction follows the GEO-NLM methodology of Carvalho and Levada~\cite{carvalho2026geo}. For each detected target, patches within the search window are represented as vertices of a weighted $k$-nearest-neighbor graph, with Euclidean patch distances as edge lengths. Geodesic distances $d_g(i,j)$ are computed using Dijkstra's shortest-path algorithm and replace direct distances in the similarity kernel. In GHNLM, aggregation is restricted to admissible candidate centers reachable from the target; unreachable candidates have zero weight.
+\pt{A construção do grafo segue a metodologia do GEO-NLM de Carvalho e Levada~\cite{carvalho2026geo}. Para cada alvo detectado, os patches da janela de busca são representados como vértices de um grafo ponderado de $k$ vizinhos mais próximos, com distâncias Euclidianas entre patches como comprimentos das arestas. As distâncias geodésicas $d_g(i,j)$ são calculadas pelo algoritmo de caminhos mínimos de Dijkstra e substituem as distâncias diretas no kernel de similaridade. No GHNLM, a agregação é restrita a centros de candidatos admissíveis alcançáveis a partir do alvo; candidatos inalcançáveis têm peso zero.}
+\begin{equation}
+\begin{aligned}
+w_g(i,j)&=\exp\left(-\frac{d_g(i,j)^2}{h^2}\right),\\
+w(i,j)&=w_g(i,j)w_s(i,j).
+\end{aligned}
+\label{eq:geodesic_weight}
+\end{equation}
+
+The graph-construction methodology is thus inherited from GEO-NLM, whereas its integration with selective impulse detection, candidate rejection, robust center replacement, spatial weighting, and fallback defines the GHNLM adaptation considered here. Reusing this methodology does not equate GHNLM with the general-purpose GNLM baseline: despite shared structural settings, their restoration rules and smoothing-parameter selection differ, as discussed in Section~\ref{subsec:geo_baseline}.
+\pt{A metodologia de construção do grafo é, portanto, herdada do GEO-NLM, enquanto sua integração com detecção seletiva de impulsos, rejeição de candidatos, substituição robusta do centro, ponderação espacial e fallback define a adaptação GHNLM considerada aqui. Reutilizar essa metodologia não torna o GHNLM equivalente ao baseline GNLM de propósito geral: apesar das configurações estruturais comuns, suas regras de restauração e seleção do parâmetro de suavização diferem, conforme discutido na Seção~\ref{subsec:geo_baseline}.}
+
+\subsection{GNLM: GEO-NLM with Matched Structural Settings}
+\label{subsec:geo_baseline}
+
+The GNLM baseline follows the GEO-NLM methodology described in Section~\ref{subsec:ghnlm}, but uses $f=1$, $t=3$, and $k=7$ in the present salt-and-pepper comparison. The original publication used $f=4$, $t=7$, and $k=10$, supported by a structural ablation under Gaussian noise with $\sigma=5$. That earlier configuration is historical context, not the baseline configuration used here. The compact settings match those of the other patch-based methods, with $k=nn=7$ applying specifically to the graph-based methods.
+\pt{O baseline GNLM segue a metodologia do GEO-NLM descrita na Seção~\ref{subsec:ghnlm}, mas usa $f=1$, $t=3$ e $k=7$ na presente comparação com ruído sal-e-pimenta. A publicação original usou $f=4$, $t=7$ e $k=10$, fundamentados por uma ablação estrutural sob ruído Gaussiano com $\sigma=5$. Essa configuração anterior constitui contexto histórico, não a configuração do baseline usado aqui. As configurações compactas correspondem às dos demais métodos baseados em patches, com $k=nn=7$ aplicando-se especificamente aos métodos baseados em grafos.}
+
+The common structural settings were adopted to reduce confounding from different patch sizes, search regions, and graph connectivity. Their suitability for GNLM under salt-and-pepper noise was investigated in a sensitivity study on the full Set12 calibration collection across all five noise densities and all evaluated tolerances, as described in Section~\ref{subsec:gnlm_structural_sensitivity}. The GNLM smoothing parameter is derived from the compact NLM calibration using the new density-specific search ranges, rather than inherited from the original Gaussian-noise experiments.
+\pt{As configurações estruturais comuns foram adotadas para reduzir fatores de confusão decorrentes de diferentes tamanhos de patch, regiões de busca e conectividade do grafo. Sua adequação ao GNLM sob ruído sal-e-pimenta foi investigada em um estudo de sensibilidade na coleção completa de calibração Set12, abrangendo as cinco densidades de ruído e todas as tolerâncias avaliadas, conforme descrito na Seção~\ref{subsec:gnlm_structural_sensitivity}. O parâmetro de suavização do GNLM é derivado da calibração do NLM compacto com as novas faixas de busca específicas por densidade, e não herdado dos experimentos originais com ruído Gaussiano.}
+
+\subsection{Complexity Analysis}
+\label{subsec:complexity}
+
+The following bounds describe a direct implementation of the stated formulation, not an inspected experimental kernel. Let $N=HW$, $q=(2t+1)^2$, and $d=(2f+1)^2$. Let $D_\tau=\sum_i M_\tau(i)$ and $\alpha_\tau=D_\tau/N$. These quantities describe detector output, including false positives, rather than the true corruption density. Scanning the image and copying unselected pixels costs $\mathcal{O}(N)$; direct compact NLM processes all pixels at cost $\mathcal{O}(Nqd)$.
+\pt{Os limites a seguir descrevem uma implementação direta da formulação apresentada, não um kernel experimental inspecionado. Sejam $N=HW$, $q=(2t+1)^2$ e $d=(2f+1)^2$. Sejam $D_\tau=\sum_i M_\tau(i)$ e $\alpha_\tau=D_\tau/N$. Essas quantidades descrevem a saída do detector, incluindo falsos positivos, e não a densidade verdadeira de corrupção. Percorrer a imagem e copiar pixels não selecionados custa $\mathcal{O}(N)$; o NLM compacto direto processa todos os pixels ao custo de $\mathcal{O}(Nqd)$.}
+
+For a detected target $i$, let $v_i\leq q$ be the number of admissible candidates. Let $C_R(d)$ denote the cost of computing a robust center from a $d$-sample neighborhood, if used, and let $C_F$ be an upper bound on the fallback cost per target. With $F_\tau$ fallback activations, a conditional operation bound is
+\pt{Para um alvo detectado $i$, seja $v_i\leq q$ o número de candidatos admissíveis. Seja $C_R(d)$ o custo de calcular um centro robusto em uma vizinhança de $d$ amostras, quando utilizado, e seja $C_F$ um limite superior para o custo do fallback por alvo. Com $F_\tau$ ativações do fallback, um limite condicional de operações é}
+\begin{equation}
+\begin{split}
+T_{\mathrm{IANLM}}=\mathcal{O}\Big(&N+D_\tau q+F_\tau C_F\\
+&+\sum_{i:M_\tau(i)=1}v_i[d+C_R(d)]\Big).
+\end{split}
+\label{eq:ianlm_complexity_data}
+\end{equation}
+If $C_F=\mathcal{O}(d)$ and robustification has linear cost, this reduces to $\mathcal{O}(N+\alpha_\tau Nqd)$. A sorting-based median can add a $d\log d$ term if the chosen sorting algorithm has that bound. The actual operator, sorting procedure, caching, and neighborhoods must be established before attributing a particular bound to the experimental implementation.
+\pt{Se $C_F=\mathcal{O}(d)$ e a robustificação tem custo linear, essa expressão se reduz a $\mathcal{O}(N+\alpha_\tau Nqd)$. Uma mediana baseada em ordenação pode acrescentar um termo $d\log d$ se o algoritmo de ordenação escolhido tiver esse limite. O operador real, o procedimento de ordenação, o cache e as vizinhanças precisam ser estabelecidos antes de atribuir um limite específico à implementação experimental.}
+
+GHNLM additionally constructs a graph and computes shortest paths for each detected target. A straightforward all-pairs construction requires $\mathcal{O}(q^2d)$ distance work; sorting each neighbor list can require $\mathcal{O}(q^2\log q)$. For $E=\mathcal{O}(kq)$ stored edges, binary-heap Dijkstra has bound $\mathcal{O}((q+E)\log q)$. These are conditional algorithmic bounds, not evidence that the missing code uses these procedures. A dense temporary distance matrix requires $\mathcal{O}(q^2)$ storage; patch vectors and a sparse graph require $\mathcal{O}(qd+kq)$ local storage.
+\pt{O GHNLM adicionalmente constrói um grafo e calcula caminhos mínimos para cada alvo detectado. Uma construção direta com todos os pares exige trabalho $\mathcal{O}(q^2d)$ para distâncias; ordenar cada lista de vizinhos pode exigir $\mathcal{O}(q^2\log q)$. Para $E=\mathcal{O}(kq)$ arestas armazenadas, Dijkstra com heap binário tem limite $\mathcal{O}((q+E)\log q)$. Esses são limites algorítmicos condicionais, não evidência de que o código ausente use esses procedimentos. Uma matriz temporária densa de distâncias exige armazenamento $\mathcal{O}(q^2)$; os vetores de patches e um grafo esparso exigem armazenamento local $\mathcal{O}(qd+kq)$.}
+
+For fixed patch size, search size, connectivity, and bounded local operators, both impulse-aware variants have linear operation growth in $N$. This does not imply similar elapsed times. On a fixed input, increasing $\tau$ cannot decrease $D_\tau$, but can reduce the candidate pool; runtime need not be monotone. Frequent fallback also does not imply that patch comparisons were skipped, since weights may be computed before a zero sum is detected. Testing $K$ values of $h$ adds $K$ filtering passes and metric evaluations and must be accounted for separately.
+\pt{Para tamanho de patch, tamanho de busca, conectividade e operadores locais limitados e fixos, ambas as variantes orientadas a impulsos apresentam crescimento linear de operações em $N$. Isso não implica tempos semelhantes. Em uma entrada fixa, aumentar $\tau$ não pode diminuir $D_\tau$, mas pode reduzir o conjunto de candidatos; o tempo não precisa ser monótono. Fallback frequente também não implica que comparações de patches foram omitidas, pois os pesos podem ser calculados antes da detecção de soma nula. Testar $K$ valores de $h$ acrescenta $K$ passagens de filtragem e avaliações de métricas e precisa ser contabilizado separadamente.}
+
+
+\section{Experimental Setup}
+\label{sec:experiments}
+
+\subsection{Public Implementation and Reproduction Environment}
+\label{subsec:reproducibility}
+
+The implementation and experimental materials are publicly available in the authors' \textit{SaltNoisyFilterGeoNLM} repository~\cite{carvalho2026saltcode}. The updated README provides container setup instructions, execution commands, parameter-selection rules, and the locations of input data, outputs, reports, and plots. It identifies \path{src/salt_experiments/unified_comparison/} as the canonical final experiment and \path{data/output/unifiedComparisonFinal/} as the archive of final results. Earlier per-level scripts, hybrid runs, and parameter studies are retained as legacy or exploratory material, not interchangeable implementations of the final comparison.
+\pt{A implementação e os materiais experimentais estão disponíveis publicamente no repositório \textit{SaltNoisyFilterGeoNLM} dos autores~\cite{carvalho2026saltcode}. O README atualizado fornece instruções de configuração do contêiner, comandos de execução, regras de seleção de parâmetros e as localizações dos dados de entrada, saídas, relatórios e gráficos. Ele identifica \path{src/salt_experiments/unified_comparison/} como o experimento final canônico e \path{data/output/unifiedComparisonFinal/} como o arquivo dos resultados finais. Scripts anteriores por nível, execuções híbridas e estudos de parâmetros são mantidos como material legado ou exploratório, não como implementações intercambiáveis da comparação final.}
+
+The Dev Container builds a Docker environment using an explicit Conda lockfile, \path{.devcontainer/conda-spec-linux-64.txt}, and the pip-only dependency specification \path{.devcontainer/requirements-pip.txt}. The documented build restores the explicit Conda package specification without dependency solving. The RAPIDS/CUDA 12.2 configuration supports the CUDA NLM backend; a compatible NVIDIA GPU, host driver, and container GPU support remain host requirements. The README documents both VS Code Dev Containers and Docker CLI execution, including WSL2 setup on Windows. These specifications support environment reconstruction, but do not make execution times independent of hardware.
+\pt{O Dev Container constrói um ambiente Docker usando um lockfile explícito Conda, \path{.devcontainer/conda-spec-linux-64.txt}, e a especificação de dependências exclusivas de pip \path{.devcontainer/requirements-pip.txt}. A construção documentada restaura a especificação explícita de pacotes Conda sem resolução de dependências. A configuração RAPIDS/CUDA 12.2 suporta o backend NLM CUDA; GPU NVIDIA compatível, driver do hospedeiro e suporte à GPU no contêiner permanecem requisitos do hospedeiro. O README documenta tanto a execução por VS Code Dev Containers quanto por Docker CLI, incluindo configuração WSL2 no Windows. Essas especificações permitem reconstruir o ambiente, mas não tornam os tempos independentes do hardware.}
+
+The canonical entry point is \path{src/salt_experiments/unified_comparison/run.py}, with \texttt{run\_sequence.py} providing two-phase orchestration. According to the documented workflow, completed per-method JSON records act as completion markers, allowing interrupted runs to resume without recomputing completed cases. A stored \texttt{protocol.json} guards against mixing incompatible protocols, and per-case SHA-256 identities check the reference and noisy inputs. The summaries are regenerated from completed records. Reopening a completed archive therefore checks or refreshes its summaries; independent numerical reproduction requires a fresh output directory rather than simply reusing completion markers.
+\pt{O ponto de entrada canônico é \path{src/salt_experiments/unified_comparison/run.py}, com \texttt{run\_sequence.py} fornecendo orquestração em duas fases. Conforme o fluxo documentado, registros JSON concluídos por método funcionam como marcadores de conclusão, permitindo retomar execuções interrompidas sem recalcular os casos concluídos. Um \texttt{protocol.json} armazenado impede misturar protocolos incompatíveis, e identidades SHA-256 por caso conferem as entradas de referência e ruidosa. Os resumos são regenerados a partir dos registros concluídos. Reabrir um arquivo de resultados concluído, portanto, confere ou atualiza seus resumos; a reprodução numérica independente exige um novo diretório de saída, em vez de simplesmente reutilizar marcadores de conclusão.}
+
+The final archive documents the protocol, per-case input identities, noisy arrays, corruption masks, detector records, restored \texttt{uint8} arrays, method parameters and metrics, and image-wise \texttt{nlm\_h\_sweep.csv} calibration curves. The aggregate files \texttt{results\_partial.csv} and \texttt{summary\_partial.csv} summarize those records. One legacy dependency must be preserved: the canonical runner obtains its clean reference arrays from the earlier NLM pickle archives. Those files are used as reference-array sources, not as sources of the selected $h$; NLM is calibrated on the current noisy observation. The README identifies the final Set12 collection as 11 images after removing Lena, consistent with the recorded group sizes.
+\pt{O arquivo final documenta o protocolo, identidades de entrada por caso, arrays ruidosos, máscaras de corrupção, registros do detector, arrays restaurados \texttt{uint8}, parâmetros e métricas dos métodos e curvas de calibração por imagem \texttt{nlm\_h\_sweep.csv}. Os arquivos agregados \texttt{results\_partial.csv} e \texttt{summary\_partial.csv} resumem esses registros. Uma dependência legada precisa ser preservada: o executor canônico obtém seus arrays de referência limpa dos arquivos pickle NLM anteriores. Esses arquivos são usados como fontes dos arrays de referência, não como fontes do $h$ selecionado; o NLM é calibrado na observação ruidosa atual. O README identifica a coleção final Set12 como 11 imagens após remover Lena, consistente com os tamanhos dos grupos registrados.}
+
+Parallel execution and CUDA acceleration make the repeated baseline computations more practical. NLM calibration evaluates multiple candidate values of $h$ and selects the largest observed score, $0.5\operatorname{PSNR}+50\operatorname{SSIM}$, within the specified search grid. The selected $h_{\mathrm{NLM}}$ then determines $h_{\mathrm{GNLM}}$ through the stated scaling rule; reproducing GNLM therefore also requires reproducing the NLM calibration. This is a full-reference benchmark procedure, not a claim of a global optimum or reference-free parameter selection. IANLM and GHNLM retain fixed $h=1$ and do not require this image-wise NLM search during restoration. The reported CUDA backend refers to NLM; parallel execution does not imply that every method uses the GPU.
+\pt{A execução paralela e a aceleração CUDA tornam mais práticas as computações repetidas dos baselines. A calibração NLM avalia múltiplos valores candidatos de $h$ e seleciona o maior score observado, $0.5\operatorname{PSNR}+50\operatorname{SSIM}$, dentro da grade de busca especificada. O $h_{\mathrm{NLM}}$ selecionado determina então $h_{\mathrm{GNLM}}$ pela regra de escala apresentada; reproduzir o GNLM, portanto, também exige reproduzir a calibração NLM. Esse é um procedimento de benchmark com referência completa, não uma afirmação de ótimo global ou seleção de parâmetros sem referência. IANLM e GHNLM mantêm $h=1$ fixo e não exigem essa busca NLM por imagem durante a restauração. O backend CUDA informado refere-se ao NLM; execução paralela não implica que todos os métodos usem a GPU.}
+
+Reproduction of the numerical results requires the same code revision, input arrays, noise realization, calibration grid, parameter rules, and metric conventions as the archived experiment. The saved outputs provide comparison targets for checking PSNR, SSIM, and score at the precision reported here. Access to source code and a container supports reproducibility, but does not itself constitute an independent rerun or establish bitwise equality across different numerical backends. Runtime reproduction requires the additional timing controls discussed in Section~\ref{sec:runtime}.
+\pt{A reprodução dos resultados numéricos exige a mesma revisão do código, arrays de entrada, realização do ruído, grade de calibração, regras de parâmetros e convenções de métricas do experimento arquivado. As saídas salvas fornecem alvos de comparação para conferir PSNR, SSIM e score na precisão apresentada aqui. O acesso ao código-fonte e a um contêiner favorece a reprodutibilidade, mas não constitui, por si só, uma reexecução independente nem estabelece igualdade bit a bit entre diferentes backends numéricos. A reprodução dos tempos exige os controles adicionais discutidos na Seção~\ref{sec:runtime}.}
+
+\pending{P17}{The README now documents the reproduction workflow and identifies the final archive. Record the exact commit and associate its \texttt{protocol.json} with the official CSVs. Resolve the remaining directory discrepancy: the README names \texttt{unifiedComparisonFinal} as final, but lists \texttt{unifiedComparisonV1} as the default output. Reproduction commands must select an explicit new output directory and preserve the required legacy reference pickles.}{O README agora documenta o fluxo de reprodução e identifica o arquivo final. Registrar o commit exato e associar seu \texttt{protocol.json} aos CSVs oficiais. Resolver a discrepância restante de diretórios: o README identifica \texttt{unifiedComparisonFinal} como final, mas lista \texttt{unifiedComparisonV1} como saída padrão. Os comandos de reprodução devem selecionar explicitamente um novo diretório de saída e preservar os pickles legados de referência necessários.}
+
+\subsection{Image Collections, Noise, and Execution Coverage}
+\label{subsec:data_noise}
+
+The revised protocol reported by the authors uses 61 grayscale image entries from Set12 and Set50, five nominal densities $p\in\{0.01,0.03,0.05,0.10,0.20\}$, and matched settings $b=\tau\in\{0,4\}$. The draft identifies 11 Set12 images after excluding Lena and 50 Set50 images. This composition gives $61\times5\times2=610$ image--density--band conditions: 110 for Set12 and 500 for Set50, or 305 at each tolerance. The official records contain all seven method outputs for each condition, yielding 4,270 rows. Reference hashes identify 60 distinct references: Set12 entry \texttt{01.png} and Set50 entry \texttt{0.png} share the same hash. The 610 conditions retain the declared dataset membership but do not represent 61 distinct image contents.
+\pt{O protocolo revisado informado pelos autores usa 61 entradas de imagens em tons de cinza do Set12 e Set50, cinco densidades nominais $p\in\{0.01,0.03,0.05,0.10,0.20\}$ e configurações correspondentes $b=\tau\in\{0,4\}$. O rascunho identifica 11 imagens do Set12 após excluir Lena e 50 imagens do Set50. Essa composição fornece $61\times5\times2=610$ condições de imagem, densidade e faixa: 110 no Set12 e 500 no Set50, ou 305 em cada tolerância. Os registros oficiais contêm as saídas dos sete métodos para cada condição, totalizando 4.270 linhas. Os hashes das referências identificam 60 referências distintas: a entrada \texttt{01.png} do Set12 e a entrada \texttt{0.png} do Set50 compartilham o mesmo hash. As 610 condições preservam a composição declarada dos conjuntos, mas não representam 61 conteúdos de imagem distintos.}
+
+All methods within a condition must receive the same noisy observation and reference, on the declared $[0,255]$ scale. The draft describes $512\times512$ reference arrays, seed 42, disjoint salt and pepper locations, $\lceil pN/2\rceil$ assignments of each type, and uniform integer band values. The CSV records confirm the declared dimensions and identical reference/noisy hashes across the seven methods within each condition. Generator details remain protocol descriptions requiring the source code and masks for independent reproduction. Sharing a seed alone does not prove that two tolerances use identical masks or matched random draws.
+\pt{Todos os métodos dentro de uma condição devem receber a mesma observação ruidosa e referência, na escala declarada $[0,255]$. O rascunho descreve arrays de referência $512\times512$, semente 42, posições de sal e pimenta disjuntas, $\lceil pN/2\rceil$ atribuições de cada tipo e valores inteiros uniformes nas faixas. Os registros CSV confirmam as dimensões declaradas e hashes de referência/imagem ruidosa idênticos entre os sete métodos em cada condição. Os detalhes do gerador permanecem descrições do protocolo que exigem código-fonte e máscaras para reprodução independente. Compartilhar uma semente, isoladamente, não prova que duas tolerâncias usem máscaras idênticas ou sorteios correspondentes.}
+
+\pending{P06}{The README identifies the final input collection and describes the archived arrays, masks, and per-case hashes. Verify their association with the official CSVs and document dataset sources, applicable image licenses, preprocessing, and hash conventions. Retain the distinction between the 61 dataset entries and 60 distinct reference hashes.}{O README identifica a coleção final de entradas e descreve os arrays, máscaras e hashes por caso arquivados. Verificar sua associação aos CSVs oficiais e documentar fontes dos conjuntos, licenças aplicáveis às imagens, pré-processamento e convenções de hash. Manter a distinção entre as 61 entradas dos conjuntos e os 60 hashes de referência distintos.}
+
+\subsection{Parameter Settings and NLM Calibration}
+\label{subsec:method_parameters}
+
+Table~\ref{tab:method_parameters} summarizes the shared structural settings: $f=1$ and $t=3$ for the patch-based methods, with $k=nn=7$ for GNLM and GHNLM. Graph connectivity is not a parameter of standard NLM or IANLM. This standardization does not require identical smoothing parameters: GNLM derives its value from the newly calibrated NLM, whereas IANLM and GHNLM retain the reported absolute $h=1$ on $[0,255]$. The historical impulse-aware setting $h=0.001h_{\mathrm{NLM}}$ and the original GEO-NLM support $(4,7,10)$ are not used to describe the current comparison.
+\pt{A Tabela~\ref{tab:method_parameters} resume as configurações estruturais comuns: $f=1$ e $t=3$ para os métodos baseados em patches, com $k=nn=7$ para GNLM e GHNLM. A conectividade do grafo não é um parâmetro do NLM padrão nem do IANLM. Essa padronização não exige parâmetros de suavização idênticos: o GNLM deriva seu valor do NLM recém-calibrado, enquanto IANLM e GHNLM mantêm o valor absoluto informado $h=1$ em $[0,255]$. A configuração histórica orientada a impulsos $h=0.001h_{\mathrm{NLM}}$ e o suporte original do GEO-NLM $(4,7,10)$ não são usados para descrever a comparação atual.}
+
+\begin{table*}[!t]
+\centering
+\caption{Declared configurations and their evidence status; this is not a completed-run inventory.}
+\label{tab:method_parameters}
+\small
+\begin{tabular}{lcccl}
+\toprule
+Method & $f$ & $t$ & $k/nn$ & Smoothing and status \\
+\midrule
+Compact NLM & 1 & 3 & -- & Density-specific calibration; 610 recorded outputs \\
+IANLM & 1 & 3 & -- & Fixed $h=1$; 610 recorded outputs \\
+GHNLM & 1 & 3 & 7 & Fixed $h=1$; 610 recorded outputs \\
+GNLM/GEO-NLM & 1 & 3 & 7 & $h_{\mathrm{GNLM}}=\gamma h_{\mathrm{NLM}}$; Eq.~\eqref{eq:gnlm_gamma} \\
+\bottomrule
+\end{tabular}
+\pt{Configurações declaradas e estado da evidência; a tabela não é um inventário de execuções concluídas.}
+\end{table*}
+
+For compact NLM, the density-dependent search intervals are listed in Table~\ref{tab:nlm_calibration_ranges}. They were established empirically using the full Set12 calibration collection across the five noise densities and all evaluated tolerances, rather than transferred from the Gaussian-noise study. The same ranges are used in the Set12/Set50 comparison, and the resulting NLM parameters supply the current GNLM parameter derivation. The image manifest and calibration outputs remain necessary to document the procedure and distinguish range design from final evaluation.
+\pt{Para o NLM compacto, os intervalos de busca específicos por densidade estão na Tabela~\ref{tab:nlm_calibration_ranges}. Eles foram estabelecidos empiricamente usando a coleção completa de calibração Set12 nas cinco densidades de ruído e em todas as tolerâncias avaliadas, em vez de serem transferidos do estudo com ruído Gaussiano. As mesmas faixas são usadas na comparação Set12/Set50, e os parâmetros NLM resultantes fornecem a base para a derivação atual do parâmetro GNLM. O manifesto das imagens e as saídas de calibração continuam necessários para documentar o procedimento e distinguir a definição das faixas da avaliação final.}
+
+\begin{table}[!t]
+\centering
+\caption{Author-specified search intervals for compact NLM; grid discretization is unverified.}
+\label{tab:nlm_calibration_ranges}
+\begin{tabular}{ccc}
+\toprule
+Density & Lower endpoint & Upper endpoint \\
+\midrule
+1\% & $h_0-120$ & $h_0+120$ \\
+3\% & $h_0+10$ & $h_0+170$ \\
+5\% & $h_0+40$ & $h_0+170$ \\
+10\% & $h_0+100$ & $h_0+280$ \\
+20\% & $h_0+250$ & $h_0+600$ \\
+\bottomrule
+\end{tabular}
+\pt{Intervalos de busca informados pelo autor para o NLM compacto; a discretização da grade não foi verificada.}
+\end{table}
+
+The protocol uses \texttt{estimate\_sigma} to obtain a noisy-image statistic from which the grid origin $h_0$ is constructed. This scikit-image routine is a wavelet-based estimator designed for Gaussian noise~\cite{vanderwalt2014scikit,donoho1994ideal}; its output is not the salt-and-pepper density or a validated impulse-noise scale. The inherited draft gives the transformation below, which must be checked against the current calibration script rather than equated directly with $\hat{\sigma}$:
+\pt{O protocolo usa \texttt{estimate\_sigma} para obter uma estatística da imagem ruidosa a partir da qual se constrói a origem da grade $h_0$. Essa rotina do scikit-image é um estimador baseado em wavelets destinado a ruído Gaussiano~\cite{vanderwalt2014scikit,donoho1994ideal}; sua saída não é a densidade sal-e-pimenta nem uma escala validada para ruído impulsivo. O rascunho herdado fornece a transformação abaixo, que precisa ser conferida no script atual de calibração, em vez de ser igualada diretamente a $\hat{\sigma}$:}
+\begin{equation}
+\begin{aligned}
+a(\hat{\sigma})&=0.8+0.5\tanh[0.3(\hat{\sigma}-1)],\\
+h_0&=\lfloor100\,\operatorname{clip}(a(\hat{\sigma}),0.7,2.2)\rfloor.
+\end{aligned}
+\label{eq:nlm_grid_origin}
+\end{equation}
+
+\pending{P07}{Verify Eq.~\eqref{eq:nlm_grid_origin}, the estimator input scale, offset step, endpoint inclusion, tie rule, and handling of $h\leq0$. In particular, $h_0-120$ can be non-positive. The interval endpoints do not establish the number of evaluated candidates, and no clipping or removal rule has been inferred in this revision.}{Verificar a Eq.~\eqref{eq:nlm_grid_origin}, a escala de entrada do estimador, o passo dos deslocamentos, a inclusão das pontas, a regra de empate e o tratamento de $h\leq0$. Em particular, $h_0-120$ pode ser não positivo. As pontas dos intervalos não estabelecem o número de candidatos avaliados, e nenhuma regra de clipping ou remoção foi inferida nesta revisão.}
+
+The inherited selection criterion maximizes the auxiliary score in Eq.~\eqref{eq:score} using the clean reference of the evaluated image. The NLM records identify a full-reference sweep of the current noisy observation, making this full-reference, image-wise benchmark calibration, not a deployment procedure for an unknown clean image. Knowing the density to choose an interval is another supplied experimental input. Grid optima should not be described as universal optima or as automatic noise-blind parameter selection.
+\pt{O critério de seleção herdado maximiza o score auxiliar da Eq.~\eqref{eq:score} usando a referência limpa da própria imagem avaliada. Os registros NLM identificam uma busca com referência completa na observação ruidosa atual, caracterizando calibração de benchmark por imagem com referência completa, não um procedimento de aplicação quando a imagem limpa é desconhecida. Conhecer a densidade para escolher um intervalo é outra informação experimental fornecida. Ótimos da grade não devem ser descritos como ótimos universais nem como seleção automática de parâmetros cega ao ruído.}
+
+For GNLM, the smoothing parameter is derived from the value selected by the compact NLM calibration for the same noisy observation. The multiplicative factor $\gamma$ depends on $h_{\mathrm{NLM}}$ and the estimate $\hat{\sigma}$ used during calibration, both on the declared $[0,255]$ intensity scale:
+\pt{Para o GNLM, o parâmetro de suavização é derivado do valor selecionado pela calibração do NLM compacto para a mesma observação ruidosa. O fator multiplicativo $\gamma$ depende de $h_{\mathrm{NLM}}$ e da estimativa $\hat{\sigma}$ usada durante a calibração, ambos na escala declarada de intensidade $[0,255]$:}
+\begin{equation}
+\gamma=\begin{cases}
+1.40, & h_{\mathrm{NLM}}<60\ \lor\ \hat{\sigma}<10,\\
+1.55, & \text{otherwise}.
+\end{cases}
+\label{eq:gnlm_gamma}
+\end{equation}
+The resulting GNLM smoothing parameter is
+\pt{O parâmetro de suavização resultante do GNLM é}
+\begin{equation}
+h_{\mathrm{GNLM}}=\gamma h_{\mathrm{NLM}}.
+\label{eq:gnlm_smoothing_transfer}
+\end{equation}
+
+The logical OR in Eq.~\eqref{eq:gnlm_gamma} means that either condition selects $\gamma=1.40$; $\gamma=1.55$ is used only when both $h_{\mathrm{NLM}}\geq60$ and $\hat{\sigma}\geq10$. The branch is therefore not assigned solely by nominal impulse density. Here, $\gamma$ denotes a smoothing multiplier, whereas $k=nn=7$ denotes graph connectivity. This rule uses the newly calibrated $h_{\mathrm{NLM}}$ and does not alter the fixed $h=1$ of IANLM and GHNLM.
+\pt{O OU lógico na Eq.~\eqref{eq:gnlm_gamma} significa que qualquer uma das condições seleciona $\gamma=1.40$; $\gamma=1.55$ é usado somente quando $h_{\mathrm{NLM}}\geq60$ e $\hat{\sigma}\geq10$ simultaneamente. Portanto, o ramo não é definido apenas pela densidade nominal de impulsos. Aqui, $\gamma$ denota um multiplicador de suavização, enquanto $k=nn=7$ denota a conectividade do grafo. Essa regra usa o $h_{\mathrm{NLM}}$ recém-calibrado e não altera o $h=1$ fixo do IANLM e GHNLM.}
+
+The draft also lists median filtering, ASWMF, and non-local medians as baselines. It assigns a $3\times3$ window to the median, radius 3 to ASWMF, while non-local medians follows the updated common patch settings $f=1,t=3$. All three baselines have 610 recorded outputs. Their boundary handling and tolerance adaptation still require the implementation for independent verification. In particular, a tolerance-enabled ASWMF implementation with local min/max target selection is not identical to using $M_\tau$, and its reported $7\times7$ support differs from the radius-one fallback within IANLM.
+\pt{O rascunho também lista filtro de mediana, ASWMF e non-local medians como baselines. Ele atribui janela $3\times3$ à mediana, raio 3 ao ASWMF, enquanto o non-local medians segue as configurações comuns de patch atualizadas $f=1,t=3$. Os três baselines têm 610 saídas registradas. O tratamento de bordas e a adaptação da tolerância ainda exigem a implementação para verificação independente. Em particular, uma implementação ASWMF com tolerância e seleção de alvos por mínimo/máximo local não é idêntica ao uso de $M_\tau$, e seu suporte informado de $7\times7$ difere do fallback de raio um dentro do IANLM.}
+
+The official parameter records confirm $h_{\mathrm{NLMedians}}=0.005h_{\mathrm{NLM}}$ in all 610 conditions. They also satisfy the GNLM transfer rule in Eqs.~\eqref{eq:gnlm_gamma}--\eqref{eq:gnlm_smoothing_transfer} and record $h=1$ for every IANLM/GHNLM output.
+\pt{Os registros oficiais de parâmetros confirmam $h_{\mathrm{NLMedians}}=0.005h_{\mathrm{NLM}}$ nas 610 condições. Eles também satisfazem a regra de transferência GNLM nas Eqs.~\eqref{eq:gnlm_gamma}--\eqref{eq:gnlm_smoothing_transfer} e registram $h=1$ para todas as saídas IANLM/GHNLM.}
+
+\subsection{Evaluation Metrics and Aggregation}
+\label{subsec:metrics_aggregation}
+
+Performance is to be reported separately in peak signal-to-noise ratio (PSNR) and structural similarity (SSIM)~\cite{wang2004ssim}. For grayscale arrays on $[0,255]$, PSNR is defined using the declared peak value 255, not the observed maximum of an individual image:
+\pt{O desempenho deve ser apresentado separadamente em razão sinal-ruído de pico (PSNR) e similaridade estrutural (SSIM)~\cite{wang2004ssim}. Para arrays em tons de cinza em $[0,255]$, o PSNR é definido usando o pico declarado 255, não o máximo observado de uma imagem individual:}
+\begin{equation}
+\begin{aligned}
+\operatorname{MSE}&=\frac{1}{N}\sum_{i\in I}(x(i)-\hat{x}(i))^2,\\
+\operatorname{PSNR}&=10\log_{10}\frac{255^2}{\operatorname{MSE}}.
+\end{aligned}
+\label{eq:psnr}
+\end{equation}
+
+The inherited auxiliary score is retained only as a calibration criterion, not a substitute for the two separate metrics. Its numerical scaling is a design choice and does not imply equal perceptual importance of PSNR and SSIM:
+\pt{O score auxiliar herdado é mantido apenas como critério de calibração, não como substituto das duas métricas separadas. Sua escala numérica é uma escolha de projeto e não implica igual importância perceptual de PSNR e SSIM:}
+\begin{equation}
+\operatorname{Score}=0.5\operatorname{PSNR}+0.5(100\operatorname{SSIM}).
+\label{eq:score}
+\end{equation}
+
+\pending{P09}{The README specifies metrics on \texttt{uint8} outputs with \texttt{data\_range=255}. Confirm clipping and conversion order, truncation versus rounding, and whether reference arrays are altered. Record the SSIM window, weights, covariance convention, constants, and channel handling for the archived version, and verify that calibration and final evaluation use the same procedure.}{O README especifica métricas em saídas \texttt{uint8} com \texttt{data\_range=255}. Confirmar a ordem de clipping e conversão, truncamento versus arredondamento e se os arrays de referência são alterados. Registrar janela, pesos, convenção de covariância, constantes e tratamento de canais do SSIM na versão arquivada e verificar que calibração e avaliação final usam o mesmo procedimento.}
+
+Results should first be grouped by dataset, density, band width, detector tolerance, and method. For a verified complete group, let $m_1,\ldots,m_n$ be the image-level metric values. The descriptive mean and sample standard deviation are
+\pt{Os resultados devem ser inicialmente agrupados por conjunto, densidade, largura de faixa, tolerância do detector e método. Para um grupo completo verificado, sejam $m_1,\ldots,m_n$ os valores da métrica por imagem. A média descritiva e o desvio padrão amostral são}
+\begin{equation}
+\overline{m}=\frac{1}{n}\sum_{i=1}^n m_i,\qquad
+s_m=\sqrt{\frac{1}{n-1}\sum_{i=1}^n(m_i-\overline{m})^2}.
+\label{eq:avg}
+\end{equation}
+
+The intended full-group sizes are 11 for Set12 and 50 for Set50. A pooled mean over 61 images weights Set50 by $50/61$; it is not an equally weighted average of the two dataset means. Mean image-level PSNR must also be distinguished from PSNR computed from a pooled pixel-level MSE. Any incomplete group must report its actual sample size and must not be compared as though it were complete.
+\pt{Os tamanhos pretendidos dos grupos completos são 11 para Set12 e 50 para Set50. Uma média agrupada sobre 61 imagens atribui peso $50/61$ ao Set50; ela não é uma média com pesos iguais entre os dois conjuntos. O PSNR médio por imagem também precisa ser distinguido do PSNR calculado a partir de um MSE agrupado por pixel. Qualquer grupo incompleto deve informar seu tamanho real e não pode ser comparado como se estivesse completo.}
+
+For an IANLM--GHNLM comparison, compute differences on matched image conditions before summarizing them. Any confidence interval must state its sampling assumptions and account for repeated conditions of the same image. A single noise realization does not estimate variability across independent noise draws; the 610 nominal conditions must not be treated as 610 independent images. No standard deviation, confidence interval, or significance statement can be recovered from the rounded means alone.
+\pt{Para comparar IANLM e GHNLM, calcular diferenças em condições correspondentes por imagem antes de resumi-las. Qualquer intervalo de confiança deve declarar suas hipóteses de amostragem e considerar as condições repetidas da mesma imagem. Uma única realização de ruído não estima a variabilidade entre sorteios independentes; as 610 condições nominais não podem ser tratadas como 610 imagens independentes. Nenhum desvio padrão, intervalo de confiança ou afirmação de significância pode ser recuperado apenas das médias arredondadas.}
+
+
+\section{Results and Discussion}
+\label{sec:results}
+
+The official files \texttt{results\_partial.csv} and \texttt{summary\_partial.csv}, supplied by the authors on 8 September 2026, supersede the unverified historical summaries. Despite their filenames, they contain the complete declared comparison: 4,270 method records over 610 conditions, with no duplicate condition--method keys or missing PSNR/SSIM values. The 140 supplied group summaries agree with means recomputed from the image-level records to numerical precision. Each condition has the same reference and noisy-image hashes across all seven methods. This verification establishes consistency of the supplied records, not an independent rerun of the algorithms.
+\pt{Os arquivos oficiais \texttt{results\_partial.csv} e \texttt{summary\_partial.csv}, fornecidos pelos autores em 8 de setembro de 2026, substituem os resumos históricos não verificados. Apesar dos nomes dos arquivos, eles contêm a comparação declarada completa: 4.270 registros de métodos em 610 condições, sem chaves duplicadas de condição e método nem valores ausentes de PSNR/SSIM. Os 140 resumos fornecidos por grupo concordam, até a precisão numérica, com as médias recalculadas dos registros por imagem. Cada condição apresenta os mesmos hashes de referência e imagem ruidosa entre os sete métodos. Essa verificação estabelece a consistência dos registros fornecidos, não uma reexecução independente dos algoritmos.}
+
+\begin{table}[!t]
+\centering
+\caption{Verified CSV coverage. Each condition contains seven method records.}
+\label{tab:coverage_status}
+\small
+\begin{tabular}{lrrr}
+\toprule
+Dataset & $\tau$ & Conditions & Method records \\
+\midrule
+Set12 & 0 & 55 & 385 \\
+Set12 & 4 & 55 & 385 \\
+Set50 & 0 & 250 & 1750 \\
+Set50 & 4 & 250 & 1750 \\
+\midrule
+Total & -- & 610 & 4270 \\
+\bottomrule
+\end{tabular}
+\pt{Cobertura verificada nos CSVs. Cada condição contém sete registros de métodos.}
+\end{table}
+
+Tables~\ref{tab:official_tau0} and \ref{tab:official_tau4} report arithmetic means of image-level PSNR and SSIM by dataset and density. Each cell contains all 11 Set12 or 50 Set50 entries. The accompanying verified summary archive also retains sample standard deviations and auxiliary scores; these dispersions describe variation across image entries, not repeated noise draws. Dataset-level averages below give equal weight to the five densities within each dataset, without pooling the two datasets.
+\pt{As Tabelas~\ref{tab:official_tau0} e \ref{tab:official_tau4} apresentam médias aritméticas de PSNR e SSIM por imagem, agrupadas por conjunto e densidade. Cada célula contém todas as 11 entradas do Set12 ou 50 do Set50. O arquivo de resumos verificados também preserva desvios padrão amostrais e scores auxiliares; essas dispersões descrevem a variação entre entradas de imagens, não sorteios repetidos do ruído. As médias por conjunto apresentadas a seguir atribuem pesos iguais às cinco densidades dentro de cada conjunto, sem agrupar os dois conjuntos.}
+
+\subsection{Results at Strict Endpoint Tolerance}
+\label{subsec:results_tau0}
+\input{tables/results_tau0}
+
+At $b=\tau=0$, IANLM achieves mean PSNR/SSIM of 44.7911 dB/0.992214 on Set12 and 39.0086 dB/0.976577 on Set50. GHNLM yields 44.7663 dB/0.992224 and 38.9402 dB/0.976255, respectively. Thus, IANLM has slightly higher mean PSNR on both datasets, but GHNLM has a slightly higher mean SSIM on Set12. Among the five external baselines, ASWMF has the highest dataset-level means of both metrics at this tolerance: 35.3049 dB/0.973496 on Set12 and 31.1794 dB/0.935432 on Set50. These are aggregate comparisons, not claims of dominance on every image.
+\pt{Em $b=\tau=0$, o IANLM alcança PSNR/SSIM médios de 44,7911 dB/0,992214 no Set12 e 39,0086 dB/0,976577 no Set50. O GHNLM obtém 44,7663 dB/0,992224 e 38,9402 dB/0,976255, respectivamente. Portanto, o IANLM apresenta PSNR médio ligeiramente superior nos dois conjuntos, mas o GHNLM apresenta SSIM médio ligeiramente superior no Set12. Entre os cinco baselines externos, o ASWMF apresenta as maiores médias por conjunto das duas métricas nessa tolerância: 35,3049 dB/0,973496 no Set12 e 31,1794 dB/0,935432 no Set50. Essas são comparações agregadas, não afirmações de domínio em todas as imagens.}
+
+\subsection{Results with Tolerance \texorpdfstring{$\tau=4$}{tau=4}}
+\label{subsec:results_tau4}
+\input{tables/results_tau4}
+
+At $b=\tau=4$, the generation bands are 0--4 and 251--255. IANLM achieves mean PSNR/SSIM of 43.8384 dB/0.983215 on Set12 and 37.6471 dB/0.969841 on Set50, compared with 43.7715 dB/0.982962 and 37.5557 dB/0.969231 for GHNLM. The strongest external baseline by the dataset-level means of both metrics is now median filtering, at 33.8826 dB/0.927816 and 28.1792 dB/0.827790. ASWMF falls to 22.6419 dB/0.594427 and 21.5055 dB/0.603548. Its change in performance warrants inspection of its impulse-selection and tolerance handling; the CSVs alone do not identify the cause.
+\pt{Em $b=\tau=4$, as faixas de geração são 0--4 e 251--255. O IANLM alcança PSNR/SSIM médios de 43,8384 dB/0,983215 no Set12 e 37,6471 dB/0,969841 no Set50, comparados com 43,7715 dB/0,982962 e 37,5557 dB/0,969231 do GHNLM. O baseline externo mais forte pelas médias por conjunto das duas métricas passa a ser o filtro de mediana, com 33,8826 dB/0,927816 e 28,1792 dB/0,827790. O ASWMF cai para 22,6419 dB/0,594427 e 21,5055 dB/0,603548. Sua mudança de desempenho justifica inspecionar a seleção de impulsos e o tratamento da tolerância; os CSVs, isoladamente, não identificam a causa.}
+
+Relative to $b=\tau=0$, both the corruption values and the detector change. The observed differences therefore compare two matched-band settings, not an isolated detector ablation. The CSVs themselves do not contain detection masks. The README documents archived corruption masks and detector records; these artifacts must be associated with the official cases before recomputing precision or recall.
+\pt{Em relação a $b=\tau=0$, tanto os valores da corrupção quanto o detector mudam. As diferenças observadas, portanto, comparam duas configurações de faixas correspondentes, não uma ablação isolada do detector. Os próprios CSVs não contêm máscaras de detecção. O README documenta máscaras de corrupção e registros de detector arquivados; esses artefatos devem ser associados aos casos oficiais antes de recalcular precisão ou revocação.}
+
+\subsection{IANLM versus GHNLM}
+\label{subsec:ianlm_vs_ghnlm_results}
+\input{tables/paired_results}
+
+All 610 IANLM outputs pair with GHNLM outputs on dataset entry, density, tolerance, and reference/noisy hashes, giving 305 pairs per tolerance. Table~\ref{tab:official_paired} summarizes IANLM minus GHNLM differences. IANLM has higher PSNR in 353 conditions, lower PSNR in 215, and exactly equal recorded PSNR in 42. For SSIM the corresponding counts are 264, 304, and 42. The small aggregate advantages therefore do not imply uniform improvement or statistical equivalence. The reported standard deviations describe paired condition-level differences; repeated densities, tolerances, and the shared reference across datasets preclude treating the 610 pairs as independent images.
+\pt{Todas as 610 saídas IANLM se emparelham com saídas GHNLM pela entrada do conjunto, densidade, tolerância e hashes de referência/imagem ruidosa, totalizando 305 pares por tolerância. A Tabela~\ref{tab:official_paired} resume diferenças IANLM menos GHNLM. O IANLM apresenta PSNR maior em 353 condições, menor em 215 e PSNR registrado exatamente igual em 42. Para SSIM, as contagens correspondentes são 264, 304 e 42. As pequenas vantagens agregadas, portanto, não implicam melhoria uniforme nem equivalência estatística. Os desvios padrão apresentados descrevem diferenças emparelhadas por condição; as densidades e tolerâncias repetidas e a referência compartilhada entre conjuntos impedem tratar os 610 pares como imagens independentes.}
+
+The fixed $h=1$ setting is confirmed in both methods, while the common structural parameters follow the author-confirmed protocol. The CSV schema does not include $f$, $t$, $nn$, or the component operators; implementation-level verification that only the distance model changes remains separate from numerical pairing.
+\pt{A configuração fixa $h=1$ está confirmada nos dois métodos, enquanto os parâmetros estruturais comuns seguem o protocolo confirmado pelos autores. O esquema CSV não inclui $f$, $t$, $nn$ nem os operadores dos componentes; a verificação, no nível de implementação, de que somente o modelo de distância muda permanece separada do emparelhamento numérico.}
+
+
+\section{Parameter Sensitivity and Variant Analysis}
+\label{sec:ablation}
+
+\subsection{GNLM Structural Sensitivity under Salt-and-Pepper Noise}
+\label{subsec:gnlm_structural_sensitivity}
+
+A sensitivity study was conducted to assess the compact GNLM configuration $(f,t,k)=(1,3,7)$ under salt-and-pepper noise before adopting common structural settings for the comparison. The study used the full Set12 calibration collection and covered all five noise densities and all evaluated tolerances. This addresses a different question from the original GEO-NLM ablation at Gaussian noise level $\sigma=5$: whether the compact configuration is suitable for the impulse-noise setting considered here. Shared settings reduce structural differences between methods but do not establish that one configuration is individually optimal for every method or condition.
+\pt{Foi realizado um estudo de sensibilidade para avaliar a configuração compacta do GNLM $(f,t,k)=(1,3,7)$ sob ruído sal-e-pimenta antes de adotar configurações estruturais comuns na comparação. O estudo usou a coleção completa de calibração Set12 e abrangeu as cinco densidades de ruído e todas as tolerâncias avaliadas. Isso trata de uma questão diferente da ablação original do GEO-NLM com nível de ruído Gaussiano $\sigma=5$: se a configuração compacta é adequada ao cenário de ruído impulsivo considerado aqui. Configurações comuns reduzem diferenças estruturais entre os métodos, mas não estabelecem que uma configuração seja individualmente ótima para todo método ou condição.}
+
+\subsection{Sensitivity to the NLM Calibration Range}
+\label{subsec:h_sensitivity}
+
+The intervals in Table~\ref{tab:nlm_calibration_ranges} concern compact NLM, not the fixed smoothing parameters of IANLM and GHNLM. A sensitivity analysis must retain the full score curves, selected $h$, grid spacing, and frequency of optima at the search boundaries. Transfer to Set50 should use the ranges fixed from Set12 without redefining them after examining Set50 results. Full-reference selection of $h$ on an evaluated Set50 image remains a benchmark calibration even if the interval itself was fixed earlier.
+\pt{Os intervalos da Tabela~\ref{tab:nlm_calibration_ranges} dizem respeito ao NLM compacto, não aos parâmetros de suavização fixos do IANLM e GHNLM. Uma análise de sensibilidade deve preservar curvas completas de score, $h$ selecionado, espaçamento da grade e frequência de ótimos nas bordas da busca. A transferência para Set50 deve usar faixas fixadas no Set12 sem redefini-las após examinar resultados do Set50. A seleção de $h$ com referência completa na própria imagem Set50 avaliada continua sendo calibração de benchmark, mesmo que o intervalo tenha sido fixado anteriormente.}
+
+The 610 NLM records identify full-reference calibration on the current noisy observation. All selected values lie within the stated density-specific intervals when $h_0$ is reconstructed from Eq.~\eqref{eq:nlm_grid_origin}. Only one record is flagged as a grid-boundary optimum: Set12 \texttt{08.png}, $p=0.03$, $\tau=0$, $h=147$. However, its recorded $\hat{\sigma}$ gives $h_0=122$, hence stated bounds 132 and 292. The flag therefore requires clarification against the actual candidate grid; it cannot be interpreted as an endpoint of the published interval.
+\pt{Os 610 registros NLM identificam calibração com referência completa na observação ruidosa atual. Todos os valores selecionados estão dentro dos intervalos declarados por densidade quando $h_0$ é reconstruído pela Eq.~\eqref{eq:nlm_grid_origin}. Apenas um registro está marcado como ótimo na borda da grade: Set12 \texttt{08.png}, $p=0.03$, $\tau=0$, $h=147$. Entretanto, seu $\hat{\sigma}$ registrado fornece $h_0=122$, portanto limites declarados de 132 e 292. A marcação exige esclarecimento em relação à grade efetiva de candidatos; não pode ser interpretada como uma ponta do intervalo publicado.}
+
+\pending{P13}{The README confirms 11 images in the final Set12 evaluation and identifies per-image NLM calibration curves. Associate those curves with the official records and inspect the flagged boundary case. Separately identify the configurations, tolerances, and image collection used in the earlier structural sensitivity study; its scope must not be inferred from the final comparison alone. Evidence for fixed $h=1$ remains separate from that GNLM study.}{O README confirma 11 imagens na avaliação final Set12 e identifica curvas de calibração NLM por imagem. Associar essas curvas aos registros oficiais e inspecionar o caso marcado como borda. Identificar separadamente configurações, tolerâncias e coleção de imagens usadas no estudo anterior de sensibilidade estrutural; seu escopo não deve ser inferido apenas da comparação final. A evidência para $h=1$ fixo permanece separada desse estudo GNLM.}
+
+\subsection{Detector Tolerance and False Detections}
+\label{subsec:tau_sensitivity}
+
+An isolated detector study should hold the noisy image and generation width $b$ fixed while varying $\tau$. The synthetic assignment mask must be retained separately from $M_\tau$ to measure detection precision, recall, and false positives, with explicit treatment of zero denominators. Clean dark and bright regions and images without added impulses are relevant controls. Intermediate tolerances and values above 4 remain unverified in the available project.
+\pt{Um estudo isolado do detector deve manter fixas a imagem ruidosa e a largura de geração $b$ enquanto varia $\tau$. A máscara de atribuições sintéticas deve ser preservada separadamente de $M_\tau$ para medir precisão, revocação e falsos positivos, com tratamento explícito de denominadores nulos. Regiões limpas escuras e claras e imagens sem impulsos adicionados são controles relevantes. Tolerâncias intermediárias e valores acima de 4 continuam não verificadas no projeto disponível.}
+
+\subsection{Distance Model and Fallback Contribution}
+\label{subsec:ianlm_vs_ghnlm}
+
+When graph edges are Euclidean patch distances, the triangle inequality gives $d_g(i,j)\geq\|y(\eta_i)-y(\eta_j)\|_2$ for reachable candidates. With the same $h$, the geodesic similarity weight is therefore no larger than its direct counterpart. This conditional property does not determine reconstruction quality, but it makes connectivity and weight underflow important when interpreting the comparison at a small absolute $h$.
+\pt{Quando as arestas do grafo são distâncias Euclidianas entre patches, a desigualdade triangular fornece $d_g(i,j)\geq\|y(\eta_i)-y(\eta_j)\|_2$ para candidatos alcançáveis. Com o mesmo $h$, o peso de similaridade geodésica não é, portanto, maior que seu correspondente direto. Essa propriedade condicional não determina a qualidade da reconstrução, mas torna a conectividade e o underflow dos pesos importantes na interpretação da comparação com $h$ absoluto pequeno.}
+
+IANLM fallback counters are available for every condition and satisfy processed pixels = fallback pixels + non-local pixels. Mean per-condition fallback fractions are 92.5055\% and 92.5930\% on Set12 at $\tau=0$ and 4, and 93.1575\% and 91.2935\% on Set50. These are unweighted means of the recorded fractions, not ratios of pooled counts. The corresponding GHNLM counters are absent. The counters establish frequent fallback but do not distinguish empty admissible sets from weight underflow or quantify a causal contribution to restoration quality.
+\pt{As contagens de fallback do IANLM estão disponíveis para todas as condições e satisfazem pixels processados = pixels de fallback + pixels não locais. As frações médias de fallback por condição são 92,5055\% e 92,5930\% no Set12 em $\tau=0$ e 4 e 93,1575\% e 91,2935\% no Set50. Essas são médias não ponderadas das frações registradas, não razões entre contagens agrupadas. As contagens correspondentes do GHNLM estão ausentes. As contagens estabelecem fallback frequente, mas não distinguem conjuntos admissíveis vazios de underflow dos pesos nem quantificam uma contribuição causal à qualidade da restauração.}
+
+\pending{P14}{Measure detected targets, admissible and reachable candidates, nonzero weights, and fallback causes separately. Compare the complete method with the same fallback alone and with controlled changes to robust replacement and spatial weighting. A high fallback count alone neither measures the non-local contribution nor shows that patch computation was avoided.}{Medir separadamente alvos detectados, candidatos admissíveis e alcançáveis, pesos não nulos e causas do fallback. Comparar o método completo com o mesmo fallback isolado e com alterações controladas da substituição robusta e ponderação espacial. Uma contagem elevada de fallback, isoladamente, não mede a contribuição não local nem mostra que o cálculo de patches foi evitado.}
+
+% Esta parte ainda precisa ser refeita para os novos valores
+\section{Visual Quality Assessment}
+\label{subsec:visual_quality}
+
+The visual assessment complements the image-level metrics by examining residual impulses, edge continuity, texture, and smoothing in corresponding regions. The comparison includes the external baselines rather than selecting only cases that favor \method. In particular, \aswmf provides a local-filter comparison, while GNLM allows inspection of the geodesic baseline. Neither the strongest external baseline nor a perceptible difference between \method and GHNLM is assumed in advance.
+\pt{A avaliação visual complementa as métricas por imagem ao examinar impulsos residuais, continuidade de bordas, textura e suavização em regiões correspondentes. A comparação inclui os baselines externos, em vez de selecionar apenas casos favoráveis ao \method. Em particular, o \aswmf fornece uma comparação com filtragem local, enquanto o GNLM permite inspecionar o baseline geodésico. Não se pressupõe qual baseline externo é o mais forte nem uma diferença perceptível entre \method e GHNLM.}
+
+Figure~\ref{fig:set12_reference_noisy_crop_regions} identifies the region selected for inspection in the supplied Butterfly example, labeled Set12 image 05 in the inherited material. Green rectangles mark the region in the reference and noisy images, and the corresponding enlarged crops are shown below. The supplied description assigns this example to $p=0.20$, the highest density in the stated evaluation protocol; this does not identify the noise-generation band $b$ or the detector tolerance $\tau$. The example is retained as an illustration from the supplied material, not as verified evidence for either tolerance in the revised comparison.
+\pt{A Figura~\ref{fig:set12_reference_noisy_crop_regions} identifica a região selecionada para inspeção no exemplo Butterfly fornecido, rotulado como imagem 05 do Set12 no material herdado. Retângulos verdes marcam a região nas imagens de referência e ruidosa, e os recortes ampliados correspondentes são mostrados abaixo. A descrição fornecida atribui esse exemplo a $p=0.20$, a maior densidade do protocolo de avaliação declarado; isso não identifica a faixa de geração do ruído $b$ nem a tolerância do detector $\tau$. O exemplo é mantido como ilustração do material fornecido, não como evidência verificada de qualquer uma das tolerâncias da comparação revisada.}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=0.45\columnwidth]{images/clean/01_reference_with_crop_rectangle.png}
+\includegraphics[width=0.45\columnwidth]{images/noisy/02_noisy_with_crop_rectangle.png}\\[1mm]
+\includegraphics[width=0.45\columnwidth]{images/cropped/butterfly/01_reference.png}
+\includegraphics[width=0.45\columnwidth]{images/cropped/butterfly/02_noisy.png}
+\caption{Supplied Butterfly example, labeled Set12 image 05. Top: reference and noisy images with the inspection region marked in green. Bottom: corresponding enlarged crops. The supplied description reports $p=0.20$; $b$, $\tau$, and execution provenance remain to be confirmed.}
+\label{fig:set12_reference_noisy_crop_regions}
+\pt{Exemplo Butterfly fornecido, rotulado como imagem 05 do Set12. Acima: imagens de referência e ruidosa com a região de inspeção marcada em verde. Abaixo: recortes ampliados correspondentes. A descrição fornecida informa $p=0.20$; $b$, $\tau$ e a proveniência da execução ainda precisam ser confirmados.}
+\end{figure}
+
+Figure~\ref{fig:set12_extreme_crop_visual} assembles the supplied crops for all seven method labels, including GNLM, which was absent from the earlier visual layout. Reference and noisy crops are included to facilitate local comparison. The method labels follow the supplied filenames; the images alone do not establish that the current compact parameters, calibrated smoothing values, and noise realization were used for every output. Before final comparison, the crop coordinates, display range, and resizing procedure must be reconciled with the underlying arrays.
+\pt{A Figura~\ref{fig:set12_extreme_crop_visual} reúne os recortes fornecidos para os sete rótulos de métodos, incluindo o GNLM, ausente na organização visual anterior. Os recortes de referência e ruidoso são incluídos para facilitar a comparação local. Os rótulos dos métodos seguem os nomes dos arquivos fornecidos; as imagens, isoladamente, não comprovam que os parâmetros compactos atuais, os valores de suavização calibrados e a mesma realização de ruído foram usados para todas as saídas. Antes da comparação final, as coordenadas dos recortes, a faixa de exibição e o procedimento de redimensionamento devem ser reconciliados com os arrays de origem.}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/01_reference.png}
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/02_noisy.png}
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/03_NLM.png}\\[1mm]
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/04_GNLM.png}
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/05_GHNLM.png}
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/06_IANLM.png}\\[1mm]
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/07_Median.png}
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/08_ASWMF.png}
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/09_NLMedian.png}
+\caption{Supplied Butterfly crops for the example described as $p=0.20$. First row: reference, noisy input, and \nlm. Second row: GNLM, GHNLM, and \method. Third row: median filtering, \aswmf, and \nlmedian. Method labels follow the supplied files; current parameter settings and tolerance are not verified.}
+\label{fig:set12_extreme_crop_visual}
+\pt{Recortes Butterfly fornecidos para o exemplo descrito como $p=0.20$. Primeira linha: referência, entrada ruidosa e \nlm. Segunda linha: GNLM, GHNLM e \method. Terceira linha: filtro de mediana, \aswmf e \nlmedian. Os rótulos dos métodos seguem os arquivos fornecidos; as configurações atuais de parâmetros e a tolerância não estão verificadas.}
+\end{figure}
+
+In these displayed crops, the NLM output exhibits softened boundaries, and residual isolated spots are visible in the median-filter output. The NLMedians-labeled crop retains conspicuous bright and dark spots, whereas the ASWMF-, GHNLM-, and IANLM-labeled crops show fewer conspicuous isolated impulses. These observations describe this supplied example only; they do not establish an average ranking or isolate the contribution of any restoration component.
+\pt{Nesses recortes exibidos, a saída do NLM apresenta contornos suavizados, e pontos isolados residuais são visíveis na saída do filtro de mediana. O recorte rotulado como NLMedians mantém pontos claros e escuros evidentes, enquanto os recortes rotulados como ASWMF, GHNLM e IANLM apresentam menos impulsos isolados evidentes. Essas observações descrevem apenas este exemplo fornecido; não estabelecem um ranking médio nem isolam a contribuição de qualquer componente de restauração.}
+
+The supplied Butterfly PNG files labeled GHNLM and IANLM have identical decoded pixel arrays, both for the full images and for the crops. Consequently, these files cannot illustrate a visual difference between the two methods. This equality concerns the exported images, not necessarily the original floating-point outputs, and must be checked against the generation and export records before being interpreted as algorithmic agreement.
+\pt{Os arquivos PNG Butterfly fornecidos com os rótulos GHNLM e IANLM têm arrays de pixels decodificados idênticos, tanto nas imagens completas quanto nos recortes. Consequentemente, esses arquivos não podem ilustrar uma diferença visual entre os dois métodos. Essa igualdade diz respeito às imagens exportadas, não necessariamente às saídas originais em ponto flutuante, e deve ser conferida nos registros de geração e exportação antes de ser interpretada como concordância entre algoritmos.}
+
+\pending{P15}{Images and crops are now available, but their correspondence to the revised experiments remains unverified. Confirm the stable image identifier, $p$, $b$, $\tau$, seed, crop coordinates, display/export processing, and actual parameters for each panel. Check whether the identical GHNLM/IANLM Butterfly exports reflect the computed results or duplicated files. Supply matched low- and high-density examples for both principal tolerances before extending the visual conclusions; the available Cameraman material also requires provenance checks.}{Imagens e recortes agora estão disponíveis, mas sua correspondência com os experimentos revisados permanece não verificada. Confirmar identificador estável da imagem, $p$, $b$, $\tau$, semente, coordenadas de recorte, processamento de exibição/exportação e parâmetros efetivos de cada painel. Conferir se as exportações Butterfly idênticas de GHNLM/IANLM refletem os resultados calculados ou arquivos duplicados. Fornecer exemplos correspondentes de baixa e alta densidade para ambas as tolerâncias principais antes de ampliar as conclusões visuais; o material Cameraman disponível também exige verificação de proveniência.}
+
+
+\section{Runtime Analysis}
+\label{sec:runtime}
+
+Table~\ref{tab:official_timing} reports the recorded filtering-call times, not end-to-end runtime. All rows specify $512\times512$ inputs, a CPU worker limit of 8, and a Numba thread limit of 8. The NLM backend is recorded as \texttt{NLM\_fast\_cuda\_global}; this field does not establish that other methods use CUDA. NLM calibration is separately recorded, with mean 4.888950 s and median 4.076795 s over 610 conditions. The table excludes this calibration cost and does not establish equivalent timing scopes or hardware-normalized speedups.
+\pt{A Tabela~\ref{tab:official_timing} apresenta os tempos registrados da chamada de filtragem, não o tempo ponta a ponta. Todas as linhas especificam entradas $512\times512$, limite de 8 processos CPU e limite de 8 threads Numba. O backend do NLM é registrado como \texttt{NLM\_fast\_cuda\_global}; esse campo não estabelece que outros métodos usem CUDA. A calibração NLM é registrada separadamente, com média de 4,888950 s e mediana de 4,076795 s nas 610 condições. A tabela exclui esse custo de calibração e não estabelece escopos de tempo equivalentes nem speedups normalizados por hardware.}
+
+\input{tables/runtime_results}
+
+Calibration, compilation/warm-up, filtering, device transfers, process initialization, and metric evaluation must be timed separately or included identically in a stated end-to-end measurement. CPU/GPU synchronization, worker counts, thread limits, image sizes, and software versions must be recorded. Measurements from different worker configurations must not be pooled as if resources were fixed; asymptotic complexity does not substitute for these controls.
+\pt{Calibração, compilação/aquecimento, filtragem, transferências de dispositivo, inicialização de processos e avaliação de métricas precisam ser cronometradas separadamente ou incluídas de forma idêntica em uma medição ponta a ponta declarada. Sincronização CPU/GPU, número de processos, limites de threads, tamanhos de imagem e versões de software precisam ser registrados. Medições com números diferentes de processos não podem ser agrupadas como se os recursos fossem fixos; a complexidade assintótica não substitui esses controles.}
+
+\pending{P16}{Filtering-call and NLM calibration times are now available, with fixed recorded worker/thread limits. Supply the hardware/software manifest and confirm GPU synchronization, warm-up, transfers, and the timing scope of each method before reporting end-to-end speedups.}{Os tempos da chamada de filtragem e de calibração NLM agora estão disponíveis, com limites fixos registrados de processos/threads. Fornecer o manifesto de hardware/software e confirmar sincronização GPU, aquecimento, transferências e escopo de tempo de cada método antes de apresentar speedups ponta a ponta.}
+
+
+\section{Limitations}
+\label{sec:limitations}
+
+The official image-level CSVs establish numerical results and complete coverage, and the public source code, data, and container configuration provide a basis for reproduction as described in Section~\ref{subsec:reproducibility}. The remaining reproducibility task is to associate the exact code revision, execution configuration, and archived outputs with the reported experiment, not to make an unavailable implementation public. The mathematical description of the robust replacement, spatial weighting, and fallback operators must remain consistent with that version. Public availability does not remove the need for controlled component ablations or an independent rerun. Set12 and Set50 share one reference hash, so this comparison is not an entirely disjoint cross-dataset evaluation.
+\pt{Os CSVs oficiais por imagem estabelecem resultados numéricos e cobertura completa, e o código-fonte, os dados e a configuração de contêiner públicos fornecem uma base para reprodução, conforme descrito na Seção~\ref{subsec:reproducibility}. A tarefa restante de reprodutibilidade é associar a revisão exata do código, a configuração de execução e as saídas arquivadas ao experimento apresentado, não tornar pública uma implementação indisponível. A descrição matemática dos operadores de substituição robusta, ponderação espacial e fallback deve permanecer consistente com essa versão. A disponibilidade pública não elimina a necessidade de ablações controladas de componentes ou de uma reexecução independente. Set12 e Set50 compartilham um hash de referência, de modo que essa comparação não constitui uma avaliação entre conjuntos inteiramente disjuntos.}
+
+The target model is synthetic grayscale impulse corruption on $[0,255]$. Matching $b$ and $\tau$ supplies the detector with the generation band and does not test automatic tolerance estimation. Increasing $\tau$ can introduce false detections even in clean images; neither a large mathematical admissible range nor the two principal settings establish robustness to arbitrary noise, color images, or acquired camera processing.
+\pt{O modelo alvo é corrupção impulsiva sintética em tons de cinza em $[0,255]$. Igualar $b$ e $\tau$ fornece ao detector a faixa de geração e não testa a estimação automática da tolerância. Aumentar $\tau$ pode introduzir falsas detecções mesmo em imagens limpas; nem uma ampla faixa matemática admissível nem as duas configurações principais estabelecem robustez a ruído arbitrário, imagens coloridas ou processamento adquirido por câmeras.}
+
+The proposed NLM calibration intervals depend on known density and, under the inherited score selection, on the clean reference. Their retrospective design and image-wise optimization must be separated from deployment performance. The same intervals and derived $h$ values should not be transferred automatically to other patch sizes, distance normalizations, or noise models. Choosing $h=1$ without image-wise search does not make the impulse-aware methods parameter-free.
+\pt{Os intervalos propostos para calibração do NLM dependem da densidade conhecida e, sob a seleção herdada por score, da referência limpa. Sua definição retrospectiva e otimização por imagem devem ser separadas do desempenho na aplicação. Os mesmos intervalos e valores derivados de $h$ não devem ser transferidos automaticamente para outros tamanhos de patch, normalizações de distância ou modelos de ruído. Escolher $h=1$ sem busca por imagem não torna os métodos orientados a impulsos livres de parâmetros.}
+
+A small absolute $h$ can suppress most patch weights numerically, making fallback analysis essential. Comparing IANLM with GHNLM alone cannot isolate the benefit of switching, candidate rejection, robust replacement, or spatial weights. Matched component ablations and comparisons with established impulse-specific non-local methods remain necessary before attributing any improvement to an individual design choice.
+\pt{Um $h$ absoluto pequeno pode suprimir numericamente a maioria dos pesos entre patches, tornando essencial a análise de fallback. Comparar apenas IANLM com GHNLM não isola o benefício do chaveamento, da rejeição de candidatos, da substituição robusta ou dos pesos espaciais. Ablações correspondentes de componentes e comparações com métodos não locais estabelecidos específicos para impulsos continuam necessárias antes de atribuir qualquer melhoria a uma escolha individual de projeto.}
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+This work formulates IANLM as an impulse-aware non-local restoration framework combining selective switching, candidate rejection, patch similarity, spatial weighting, and local fallback. Its configurable detector generalizes the strict endpoint rule to near-extreme bands while preserving pixels classified as reliable. The cases $\tau=0$ and $\tau=4$ correspond to exact endpoints and the bands 0--4 and 251--255, respectively; larger tolerances require caution because valid image intensities can also lie in the detected bands.
+\pt{Este trabalho formula o IANLM como uma estrutura de restauração não local orientada a impulsos que combina chaveamento seletivo, rejeição de candidatos, similaridade entre patches, ponderação espacial e fallback local. Seu detector configurável generaliza a regra estrita dos extremos para faixas próximas deles, preservando pixels classificados como confiáveis. Os casos $\tau=0$ e $\tau=4$ correspondem aos extremos exatos e às faixas 0--4 e 251--255, respectivamente; tolerâncias maiores exigem cautela porque intensidades válidas da imagem também podem estar nas faixas detectadas.}
+
+The official comparison contains 4,270 outputs over 610 conditions for seven methods. IANLM has higher dataset-level mean PSNR than GHNLM at both tolerances, with mean differences ranging from 0.0248 to 0.0915 dB across the four dataset--tolerance groups. SSIM differences are small and do not uniformly favor IANLM; on Set12 at $\tau=0$, GHNLM has a slightly higher mean SSIM. The strongest external baseline in dataset-level mean PSNR and SSIM changes from ASWMF at $\tau=0$ to median filtering at $\tau=4$. These findings support the complete impulse-aware procedure in the evaluated synthetic settings, not a universal ranking or an isolated benefit of non-local aggregation.
+\pt{A comparação oficial contém 4.270 saídas em 610 condições para sete métodos. O IANLM apresenta PSNR médio por conjunto superior ao GHNLM nas duas tolerâncias, com diferenças médias de 0,0248 a 0,0915 dB nos quatro grupos de conjunto e tolerância. As diferenças de SSIM são pequenas e não favorecem uniformemente o IANLM; no Set12 em $\tau=0$, o GHNLM apresenta SSIM médio ligeiramente maior. O baseline externo mais forte em PSNR e SSIM médios por conjunto muda de ASWMF em $\tau=0$ para filtro de mediana em $\tau=4$. Esses achados sustentam o procedimento completo orientado a impulsos nas configurações sintéticas avaliadas, não um ranking universal nem um benefício isolado da agregação não local.}
+
+Further work should isolate the substantial fallback contribution, verify the ASWMF tolerance response, resolve the calibration boundary flag, and benchmark timing scopes consistently. The shared image content between datasets and full-reference baseline calibration must be considered when assessing generalization. The public implementation and container environment already support reuse and reproduction; packaging a standalone library and evaluating broader noise models remain future work.
+\pt{Trabalhos adicionais devem isolar a contribuição substancial do fallback, verificar a resposta do ASWMF à tolerância, esclarecer a marcação de borda da calibração e medir tempos com escopos consistentes. O conteúdo de imagem compartilhado entre conjuntos e a calibração dos baselines com referência completa devem ser considerados ao avaliar generalização. A implementação pública e o ambiente em contêiner já permitem reutilização e reprodução; empacotar uma biblioteca independente e avaliar modelos de ruído mais amplos permanecem como trabalhos futuros.}
+
+\backmatter
+\bmhead{Acknowledgements}
+Alexandre L. M. Levada thanks CNPq (Conselho Nacional de Desenvolvimento Científico e Tecnológico) for the financial support through grant number 301432/2025-2.  Adriano R. Carvalho thanks the Federal Institute of Education, Science and Technology of South of Minas Gerais - for institutional support through the Program for Academic Qualification Incentive and for granting partial release from his professional duties to pursue doctoral studies. This work was also financed in part by the Coordenação de Aperfeiçoamento de Pessoal de Nível Superior - Brasil (CAPES) - Finance Code 001.
+
+\pt{Alexandre L. M. Levada agradece ao CNPq pelo apoio financeiro por meio do processo 301432/2025-2. Adriano R. Carvalho agradece ao Instituto Federal de Educação, Ciência e Tecnologia do Sul de Minas Gerais pelo apoio institucional por meio do Programa de Incentivo à Qualificação Acadêmica e pela concessão de afastamento parcial de suas atividades profissionais para cursar o doutorado. Este trabalho também foi financiado em parte pela Coordenação de Aperfeiçoamento de Pessoal de Nível Superior -- Brasil (CAPES), Código de Financiamento 001.}
+\section*{Statements and Declarations}
+\subsection*{Data and Code Availability}
+The source code and supporting experimental materials are publicly available at \url{https://github.com/AdrianoCarvalh0/SaltNoisyFilterGeoNLM}~\cite{carvalho2026saltcode}. The updated README identifies the canonical runner, final result archive, input dependencies, per-case artifacts, and the frozen Dev Container/Docker environment, together with setup and execution instructions. Reports and plots are supplied alongside the numerical records. Section~\ref{subsec:reproducibility} describes the calibration dependencies and version-identification requirements for reproducing the numerical results.
+\pt{O código-fonte e os materiais experimentais de apoio estão disponíveis publicamente em \url{https://github.com/AdrianoCarvalh0/SaltNoisyFilterGeoNLM}~\cite{carvalho2026saltcode}. O README atualizado identifica o executor canônico, o arquivo final de resultados, as dependências de entrada, os artefatos por caso e o ambiente Dev Container/Docker congelado, juntamente com instruções de configuração e execução. Relatórios e gráficos são fornecidos junto aos registros numéricos. A Seção~\ref{subsec:reproducibility} descreve as dependências da calibração e os requisitos de identificação de versão para reproduzir os resultados numéricos.}
+
+\revisionnote{Confirmar as demais declarações dos autores: financiamento, conflitos de interesse e contribuições. A disponibilidade de dados e código está declarada acima; vincular a versão exata aos resultados conforme P17.}
+% O estilo bibliográfico numérico é selecionado pela classe sn-jnl.
+\bibliography{references}
+\end{document}

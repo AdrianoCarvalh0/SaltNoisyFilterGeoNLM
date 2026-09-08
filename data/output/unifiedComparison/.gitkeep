@@ -1,0 +1,3 @@
+# This directory is intentionally empty.
+# Running the unified comparison writes all results here (protocol.json,
+# per-case artifacts, results_partial.csv, summary_partial.csv).
