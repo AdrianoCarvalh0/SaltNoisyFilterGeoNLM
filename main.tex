@@ -42,7 +42,7 @@
 \graphicspath{{./}}
 
 \begin{document}
-\title[IANLM for Impulse Noise]{IANLM: Impulse-Aware Non-Local Restoration for Salt-and-Pepper Image Denoising}
+\title[IANLM for Impulse Noise]{IANLM: Tolerance-Aware Non-Local Means for Near-Extreme Salt-and-Pepper Denoising}
 % PT: IANLM: restauração não local orientada a impulsos para remoção de ruído sal-e-pimenta em imagens.
 \author*[1]{\fnm{Adriano dos Reis} \sur{Carvalho}}\email{adriano.carvalho@ifsuldeminas.edu.br}
 \author[1]{\fnm{Alexandre L. M.} \sur{Levada}}
@@ -354,11 +354,7 @@ The main strength of \nlm is its ability to exploit redundancy and self-similari
 For the direct formula above, $h>0$ and the squared patch distance is written as a sum, not a mean. We use $f$ for patch radius and $t$ for search radius, giving nominal sizes $(2f+1)^2$ and $(2t+1)^2$ away from boundaries. Thus, compact NLM with $f=1,t=3$ uses $3\times3$ patches within a nominal $7\times7$ search region. Matching these sizes does not make standard NLM impulse-aware: it still filters every target and does not apply $M_\tau$.
 \pt{Na fórmula direta acima, $h>0$ e a distância quadrática entre patches é escrita como soma, não como média. Usamos $f$ para o raio do patch e $t$ para o raio de busca, fornecendo tamanhos nominais $(2f+1)^2$ e $(2t+1)^2$ longe das bordas. Assim, o NLM compacto com $f=1,t=3$ usa patches $3\times3$ em uma região nominal de busca $7\times7$. Igualar esses tamanhos não torna o NLM padrão orientado a impulsos: ele continua filtrando todos os alvos e não aplica $M_\tau$.}
 
-Inspecting the reference implementation fixes these conventions. The patch distance is the \emph{unnormalized} squared Euclidean sum $\|y(\eta_i)-y(\eta_j)\|_2^2=\sum_{u,v}\big(y(i+u,j+v)-y(j'+u,k'+v)\big)^2$ over the $(2f+1)^2$ patch offsets, matching Eq.~\eqref{eq:nlm_weight}: no division by patch size is applied, so $h$ absorbs the patch scale. The target pixel is included as its own candidate ($j=i$ contributes a zero-distance, unit weight), and aggregation uses the observed value $y(j)$ with normalizer $Z(i)=\sum_j w(i,j)$. Boundaries use mirror (symmetric) padding of width $f$ applied inside the kernel before filtering.
-\pt{A inspeção da implementação de referência fixa essas convenções. A distância entre patches é a soma quadrática euclidiana \emph{não normalizada} $\|y(\eta_i)-y(\eta_j)\|_2^2=\sum_{u,v}\big(y(i+u,j+v)-y(j'+u,k'+v)\big)^2$ sobre os $(2f+1)^2$ deslocamentos do patch, de acordo com a Eq.~\eqref{eq:nlm_weight}: não há divisão pelo tamanho do patch, de modo que $h$ absorve a escala do patch. O pixel alvo é incluído como seu próprio candidato ($j=i$ contribui com distância nula e peso unitário), e a agregação usa o valor observado $y(j)$ com normalizador $Z(i)=\sum_j w(i,j)$. As bordas usam preenchimento por espelhamento (simétrico) de largura $f$ aplicado dentro do kernel antes da filtragem.}
-
-The official results were produced by the CUDA backend \texttt{NLM\_fast\_cuda\_global}, recorded per record as \texttt{nlm\_backend}. Two indexing conventions must be distinguished. The CPU reference clips the search window to the padded domain, $r\in[\,\max(i{+}f{-}t,f),\,\min(i{+}f{+}t,m{+}f{-}1)\,]$, so it never reads outside the mirrored buffer. The CUDA kernel scans the full window $r\in[i{+}f{-}t,\,i{+}f{+}t]$ without clipping while padding only to width $f$. For the reported configuration $f=1,\,t=3$ this makes the search reach exceed the padding, so pixels within $t$ of a border index memory outside the width-$f$ mirrored buffer. The two backends therefore do not coincide near borders, and reproductions should either add padding of width $t{+}f$ (or clip the search range) to make the CUDA path match the clipped CPU reference before treating the two as interchangeable.
-\pt{Os resultados oficiais foram produzidos pelo backend CUDA \texttt{NLM\_fast\_cuda\_global}, registrado em cada registro como \texttt{nlm\_backend}. Duas convenções de indexação devem ser distinguidas. A referência em CPU recorta a janela de busca ao domínio preenchido, $r\in[\,\max(i{+}f{-}t,f),\,\min(i{+}f{+}t,m{+}f{-}1)\,]$, de modo que nunca lê fora do buffer espelhado. O kernel CUDA percorre a janela completa $r\in[i{+}f{-}t,\,i{+}f{+}t]$ sem recorte, embora o preenchimento tenha apenas largura $f$. Para a configuração reportada $f=1,\,t=3$, isso faz o alcance da busca exceder o preenchimento, de modo que pixels a até $t$ de uma borda indexam memória fora do buffer espelhado de largura $f$. Os dois backends, portanto, não coincidem próximo às bordas, e reproduções devem acrescentar preenchimento de largura $t{+}f$ (ou recortar a faixa de busca) para fazer o caminho CUDA coincidir com a referência em CPU recortada antes de tratá-los como intercambiáveis.}
+\pending{P02}{Confirm the actual patch-distance normalization, search indexing, padding, target inclusion, and CPU/CUDA agreement. The version history records a concern about out-of-bounds accesses in an earlier NLM kernel; the public version history must be linked to the official outputs to establish which corrected kernel produced each result.}{Confirmar a normalização real das distâncias, os índices de busca, o padding, a inclusão do alvo e a concordância CPU/CUDA. O histórico registra uma preocupação com acessos fora dos limites em um kernel NLM anterior; o histórico público de versões deve ser associado às saídas oficiais para estabelecer qual kernel corrigido produziu cada resultado.}
 
 
 \section{The Proposed Impulse-Aware Non-Local Means Framework}
@@ -401,49 +397,7 @@ F_i(y,\tau),& Z_i=0,
 Here, $F_i$ denotes the local fallback. Nonnegative finite weights give $Z_i\geq0$, but an empty candidate set is not the only reason for a zero sum: all computed exponential weights may underflow even when candidates exist. The numerical implementation must test the normalizer before division and identify non-finite weights as failures rather than treating them as valid averages. The fallback operator itself remains to be matched to the experimental code.
 \pt{Aqui, $F_i$ denota o fallback local. Pesos finitos não negativos fornecem $Z_i\geq0$, mas um conjunto vazio não é a única causa de soma nula: todos os pesos exponenciais calculados podem sofrer underflow mesmo quando existem candidatos. A implementação numérica deve testar o normalizador antes da divisão e identificar pesos não finitos como falhas, em vez de tratá-los como médias válidas. O próprio operador de fallback ainda precisa ser associado ao código experimental.}
 
-The three operators left abstract above are fixed by the reference implementation as follows. Let a candidate center $j$ have an $f$-radius patch with median $\mu_j$ and (population) standard deviation $\sigma_j$. With $z_\alpha=1.96$ and outlier-mixing coefficient $\alpha_{\mathrm{out}}=0$, the aggregated value is the robust candidate-center replacement
-\pt{Os três operadores deixados abstratos acima são fixados pela implementação de referência da forma a seguir. Seja um centro candidato $j$ com um patch de raio $f$ de mediana $\mu_j$ e desvio-padrão (populacional) $\sigma_j$. Com $z_\alpha=1.96$ e coeficiente de mistura de outliers $\alpha_{\mathrm{out}}=0$, o valor agregado é a substituição robusta do centro do candidato}
-\begin{equation}
-R_i(j)=
-\begin{cases}
-y(j), & \mu_j-z_\alpha\sigma_j < y(j) < \mu_j+z_\alpha\sigma_j,\\[2pt]
-\alpha_{\mathrm{out}}\,y(j)+(1-\alpha_{\mathrm{out}})\,\mu_j, & \text{otherwise,}
-\end{cases}
-\label{eq:ianlm_robust_center}
-\end{equation}
-so that with $\alpha_{\mathrm{out}}=0$ an out-of-band center is replaced by the patch median $\mu_j$. Crucially, $R_i(j)$ enters only the aggregation; the patch distance in Eq.~\eqref{eq:ianlm_patch_weight} still uses the raw noisy patches, consistent with the description above.
-\pt{de modo que, com $\alpha_{\mathrm{out}}=0$, um centro fora da banda é substituído pela mediana do patch $\mu_j$. Fundamentalmente, $R_i(j)$ entra apenas na agregação; a distância entre patches na Eq.~\eqref{eq:ianlm_patch_weight} continua usando os patches ruidosos crus, de acordo com a descrição acima.}
-
-The nonnegative spatial weight uses ASWMF-inspired coefficients $(1,1,10)$ over the search offsets $(d_i,d_j)=(r-i,s-j)$,
-\pt{O peso espacial não negativo usa coeficientes inspirados no ASWMF $(1,1,10)$ sobre os deslocamentos de busca $(d_i,d_j)=(r-i,s-j)$,}
-\begin{equation}
-w_s(i,j)=
-\begin{cases}
-1, & d_i=d_j \quad(\text{main diagonal}),\\
-1, & d_i+d_j=0 \quad(\text{anti-diagonal}),\\
-10, & \text{otherwise,}
-\end{cases}
-\label{eq:ianlm_spatial_weight}
-\end{equation}
-where $d_i=d_j$ is tested first, so the center offset receives weight $1$.
-\pt{onde $d_i=d_j$ é testado primeiro, de modo que o deslocamento central recebe peso $1$.}
-
-The fallback for $Z_i=0$ is a radius-$f$ ASWMF-weighted local mean restricted to non-impulsive neighbors $\mathcal{N}_f(i)\!\setminus\!\text{imp}$ (those with $\tau<y<255-\tau$),
-\pt{O fallback para $Z_i=0$ é uma média local ponderada pelo ASWMF de raio $f$ restrita aos vizinhos não impulsivos $\mathcal{N}_f(i)\!\setminus\!\text{imp}$ (aqueles com $\tau<y<255-\tau$),}
-\begin{equation}
-F_i(y,\tau)=
-\begin{cases}
-\dfrac{\displaystyle\sum_{k\in\mathcal{N}_f(i)\setminus\text{imp}} w_s(i,k)\,y(k)}
-      {\displaystyle\sum_{k\in\mathcal{N}_f(i)\setminus\text{imp}} w_s(i,k)},
-& \text{if a valid neighbor exists,}\\[2.2ex]
-\dfrac{1}{|\mathcal{N}_f(i)|}\displaystyle\sum_{k\in\mathcal{N}_f(i)} y(k),
-& \text{otherwise.}
-\end{cases}
-\label{eq:ianlm_fallback}
-\end{equation}
-
-Boundary handling mirrors the image with a border of width $f$ before filtering; the search window of half-width $t$ is clipped to the mirrored domain. Candidate centers that are themselves impulsive are rejected. The update is not in place: targets are read from the mirrored input and written to a separate output, while reliable pixels are copied unchanged. With $f=1$ and $t=3$, this uses a $3\times3$ patch and a $7\times7$ search window. Equations~\eqref{eq:ianlm_robust_center}--\eqref{eq:ianlm_fallback} therefore complete Eq.~\eqref{eq:ianlm_estimate} and Algorithm~\ref{alg:ianlm} into a fully reproducible specification.
-\pt{O tratamento de borda espelha a imagem com uma borda de largura $f$ antes da filtragem; a janela de busca de meia-largura $t$ é recortada ao domínio espelhado. Centros candidatos que são eles próprios impulsivos são rejeitados. A atualização não é in-place: os alvos são lidos da entrada espelhada e escritos em uma saída separada, enquanto os pixels confiáveis são copiados sem alteração. Com $f=1$ e $t=3$, usa-se um patch $3\times3$ e uma janela de busca $7\times7$. As Equações~\eqref{eq:ianlm_robust_center}--\eqref{eq:ianlm_fallback} portanto completam a Eq.~\eqref{eq:ianlm_estimate} e o Algoritmo~\ref{alg:ianlm} em uma especificação totalmente reproduzível.}
+\pending{P03}{The draft reports $z_\alpha=1.96$, zero outlier mixing, spatial coefficients $(1,1,10)$, and a radius-one fallback, but these numbers do not define $R_i$, $w_s$, or $F_i$. Supply the exact formulas, neighborhoods, boundary rules, and update order from the scripts. Until then, Eq.~\eqref{eq:ianlm_estimate} and Algorithm~\ref{alg:ianlm} specify an aggregation structure, not a complete reproducible implementation.}{O rascunho informa $z_\alpha=1.96$, mistura de outliers nula, coeficientes espaciais $(1,1,10)$ e fallback de raio um, mas esses números não definem $R_i$, $w_s$ ou $F_i$. Fornecer as fórmulas, vizinhanças, regras de borda e ordem de atualização exatas dos scripts. Até lá, a Eq.~\eqref{eq:ianlm_estimate} e o Algoritmo~\ref{alg:ianlm} especificam uma estrutura de agregação, não uma implementação completamente reproduzível.}
 
 \begin{algorithm}[!t]
 \caption{IANLM aggregation structure with configurable tolerance}

@@ -117,7 +117,7 @@ SaltAndPepper/
 │
 ├─ src/
 │  └─ salt_experiments/
-│     └─ unified_comparison/      # the experiment — self-contained
+│     └─ unified_comparison/      # the canonical experiment — self-contained
 │        ├─ run.py                # matched, resumable protocol (run this)
 │        ├─ run_sequence.py       # two-phase resumable orchestration
 │        └─ lib/                  # all filters, noise model and helpers
@@ -132,6 +132,14 @@ SaltAndPepper/
 │
 └─ README.md
 ```
+
+## Legacy material
+
+Earlier per-level experiments, exploratory parameter studies, notebooks, plots,
+and their historical outputs live in [`legacy/`](legacy/). They are retained for
+provenance only and are not interchangeable with the canonical protocol. The
+article cites the canonical runner and the archived final records in
+`data/output/unifiedComparisonFinal/`; use `unified_comparison/` for a new run.
 
 ---
 
@@ -198,6 +206,22 @@ then the expensive `gnlm`, tracking progress in `batch_status.json`:
 ```bash
 python src/salt_experiments/unified_comparison/run_sequence.py
 ```
+
+### Targeted GNLM sensitivity pilot
+
+To inspect the reported GNLM structure `(f, t, k) = (1, 3, 7)` before making
+a broader claim, run the small Set12 medium-density pilot. It uses images
+`01`, `06`, and `11`, both final tolerances, and four nearby alternatives;
+it writes per-case records plus `results.csv` and `summary.csv`.
+
+```bash
+python src/salt_experiments/unified_comparison/studies/ablations/gnlm_structural_sensitivity.py
+```
+
+This is a descriptive pilot, not an optimization over all images, densities,
+or tolerances. It retains only metadata, calibration curves, and tabular
+results under `data/output/studies/ablations/`; inspect its planned workload
+first with `--dry-run`.
 
 ### Noise densities and impulse tolerance
 

@@ -1,0 +1,82 @@
+{
+  "study": "Set12 medium-density GNLM structural-sensitivity pilot",
+  "dataset": "set12",
+  "images": [
+    "01",
+    "06",
+    "11"
+  ],
+  "density": 0.05,
+  "tolerances": [
+    0,
+    4
+  ],
+  "seed": 42,
+  "variants": [
+    {
+      "name": "target_f1_t3_k7",
+      "description": "Reported configuration",
+      "f": 1,
+      "t": 3,
+      "k": 7
+    },
+    {
+      "name": "lower_k_f1_t3_k3",
+      "description": "Lower graph connectivity",
+      "f": 1,
+      "t": 3,
+      "k": 3
+    },
+    {
+      "name": "mid_k_f1_t3_k5",
+      "description": "Intermediate graph connectivity",
+      "f": 1,
+      "t": 3,
+      "k": 5
+    },
+    {
+      "name": "wider_search_f1_t5_k7",
+      "description": "Wider search radius",
+      "f": 1,
+      "t": 5,
+      "k": 7
+    },
+    {
+      "name": "larger_patch_f2_t3_k7",
+      "description": "Larger patch radius",
+      "f": 2,
+      "t": 3,
+      "k": 7
+    }
+  ],
+  "nlm_calibration": {
+    "f": 1,
+    "t": 3,
+    "padding": "t+f",
+    "offsets_by_density": {
+      "low": [
+        -120,
+        120
+      ],
+      "moderate": [
+        10,
+        170
+      ],
+      "medium": [
+        40,
+        170
+      ],
+      "high": [
+        100,
+        280
+      ],
+      "extreme": [
+        250,
+        600
+      ]
+    },
+    "selection": "maximize 0.5*PSNR + 50*SSIM; uint8; smallest h on ties"
+  },
+  "gnlm_smoothing": "h_nlm*(1.40 if h_nlm<60 or sigma<10 else 1.55)",
+  "scope": "Descriptive local pilot; not a universal optimum claim."
+}

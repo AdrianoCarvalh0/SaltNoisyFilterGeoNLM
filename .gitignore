@@ -21,6 +21,10 @@ sdist/
 var/
 wheels/
 share/python-wheels/
+
+# The canonical experiment keeps its source helpers in this package.
+!src/salt_experiments/unified_comparison/lib/
+!src/salt_experiments/unified_comparison/lib/**
 *.egg-info/
 .installed.cfg
 *.egg

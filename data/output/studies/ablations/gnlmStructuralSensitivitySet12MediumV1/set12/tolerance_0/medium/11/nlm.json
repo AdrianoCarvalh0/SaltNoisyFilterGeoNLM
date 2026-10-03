@@ -1,0 +1,9 @@
+{
+  "h": 218,
+  "psnr": 24.804149304572015,
+  "ssim": 0.6198646676943546,
+  "score": 43.39530803700373,
+  "sigma": 9.23121703911611,
+  "h_source": "current_noise_full_reference_sweep",
+  "time_calibration_s": 4.404708842000218
+}

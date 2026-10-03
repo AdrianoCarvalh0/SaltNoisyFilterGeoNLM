@@ -1,0 +1,11 @@
+{
+  "dataset": "set12",
+  "file_name": "11",
+  "level": "medium",
+  "density": 0.05,
+  "tolerance": 4,
+  "seed": 42,
+  "reference_sha256": "ee8d3e2495ee4b73af5145fb4cae6a733ea6ade1cfc983d864f831afa617e650",
+  "noisy_sha256": "b6790ecf844461f61aa362c615867e8c021fa1137794f69852cd5d7a2e953403",
+  "corruption_sha256": "debb22c3d934ff8357d839fc55862b5d3602941741801bf98fed6f66ade2ae9e"
+}

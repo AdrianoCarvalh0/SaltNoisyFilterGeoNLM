@@ -6,10 +6,12 @@ import numpy as np
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(PROJECT_ROOT / "src" / "salt_experiments"))
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from functions.noisy_functions import add_near_extreme_impulse_noise
-from functions.salt_filters import aswmf_filter
+from salt_experiments.unified_comparison.lib.noisy_functions import (
+    add_near_extreme_impulse_noise,
+)
+from salt_experiments.unified_comparison.lib.salt_filters import aswmf_filter
 
 
 class ImpulseToleranceTests(unittest.TestCase):
