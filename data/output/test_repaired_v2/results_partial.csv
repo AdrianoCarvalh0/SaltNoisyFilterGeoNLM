@@ -1,0 +1,2 @@
+dataset,level,file_name,tolerance,density,shape,reference_sha256,noisy_sha256,method,h,psnr,ssim,score,sigma,h_source,time_calibration_s,time_filter_call_s,cpu_worker_limit,numba_thread_limit,nlm_backend
+set12,low,01,0,0.01,"[512, 512]",0a372ced9fd4d1f9633532a58073e3974b41da8cfc87f04ec8e9a8dc6a89bba1,580fbc14af471717cfc09261d71b2bee527d3960eb5a144e296d4af84219023d,nlm,170,30.941368203386588,0.8546292802286122,58.202148113123904,0.5311466516137235,current_noise_full_reference_sweep,8.299932738999814,0.004414985999574128,8,8,NLM_fast_cuda_global

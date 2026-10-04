@@ -1,0 +1,13 @@
+{
+  "dataset": "set50",
+  "level": "extreme",
+  "file_name": "30",
+  "tolerance": 0,
+  "density": 0.2,
+  "shape": [
+    512,
+    512
+  ],
+  "reference_sha256": "b1cccc0e8d64bae511f9cd0c5596628364bd1e09c90c5e793604a1f7a55f642f",
+  "noisy_sha256": "359add0ac1ed7ae8c7d26ce7e157c7b7f46316c0ef306cb182c691b45fa64432"
+}

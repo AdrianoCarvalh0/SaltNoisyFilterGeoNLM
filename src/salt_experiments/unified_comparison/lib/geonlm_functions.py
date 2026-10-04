@@ -103,7 +103,7 @@ def process_pixel(i, j, img_n, f, t, h, nn, m, n):
     return NL / Z if Z > 0 else img_n[im, jn]
 
 
-def Parallel_GEONLM(img_n, f, t, h, nn):
+def Parallel_GEONLM(img_n, f, t, h, nn, n_jobs=8):
     """
     Apply the GEONLM filter in parallel over all pixels of the original image domain.
 
@@ -132,7 +132,7 @@ def Parallel_GEONLM(img_n, f, t, h, nn):
     print(f'M: {m}, N: {n}')
 
     # Parallel evaluation over all (i, j) in the original domain
-    filtered = Parallel(n_jobs=-1)(
+    filtered = Parallel(n_jobs=n_jobs)(
         delayed(process_pixel)(i, j, img_n, f, t, h, nn, m, n)
         for i in range(m)
         for j in range(n)
@@ -143,7 +143,9 @@ def Parallel_GEONLM(img_n, f, t, h, nn):
     return filtered_geo
 
 
-def run_geonlm_pipeline(img_original, h_base, img_noisy, f, t, mult, nn=10):
+def run_geonlm_pipeline(
+    img_original, h_base, img_noisy, f, t, mult, nn=10, n_jobs=8
+):
 
     img_noisy_mirror = mirror_cpu(img_noisy, f)    
    
@@ -153,7 +155,7 @@ def run_geonlm_pipeline(img_original, h_base, img_noisy, f, t, mult, nn=10):
     h_geo = (h_base) * mult
     print(f"\nExecutando GEONLM com h = {h_geo:.2f} (base {h_base} * {mult})")
 
-    img_geo = Parallel_GEONLM(img_n_geo, f=f, t=t, h=h_geo, nn=nn)
+    img_geo = Parallel_GEONLM(img_n_geo, f=f, t=t, h=h_geo, nn=nn, n_jobs=n_jobs)
 
     img_geo_no_pad = img_geo[f:-f, f:-f]  # Remove 'f' pixels de cada lado
     img_geo_no_pad = np.clip(img_geo_no_pad, 0, 255).astype(np.uint8)

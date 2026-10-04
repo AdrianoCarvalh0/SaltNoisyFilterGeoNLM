@@ -1,0 +1,27 @@
+{
+  "dataset": "set50",
+  "level": "medium",
+  "file_name": "8",
+  "tolerance": 4,
+  "density": 0.05,
+  "shape": [
+    512,
+    512
+  ],
+  "reference_sha256": "fd53a01b9f6a3a02a5408efee91cfa235b1325372804d49874a677719089b14e",
+  "noisy_sha256": "e41c2725670b50759aecd2c4b1c6549d5e66ca18268422ec80b7c91e13cd1cd5",
+  "method": "ianlm",
+  "h": 1.0,
+  "h_source": "fixed_independent",
+  "processed_pixels": 13108,
+  "fallback_pixels": 10654,
+  "nonlocal_pixels": 2454,
+  "fallback_fraction": 0.8127860848336893,
+  "psnr": 44.619992884143294,
+  "ssim": 0.9953789486159038,
+  "score": 72.07894387286684,
+  "time_filter_call_s": 0.14729299199825618,
+  "cpu_worker_limit": 8,
+  "numba_thread_limit": 8,
+  "nlm_backend": "NLM_fast_cuda_global"
+}

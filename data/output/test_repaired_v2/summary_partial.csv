@@ -1,0 +1,2 @@
+dataset,tolerance,level,method,n,psnr,ssim,score,time_filter_call_s
+set12,0,low,nlm,1,30.941368203386588,0.8546292802286122,58.202148113123904,0.004414985999574128

@@ -1,0 +1,13 @@
+{
+  "dataset": "set12",
+  "level": "medium",
+  "file_name": "03",
+  "tolerance": 4,
+  "density": 0.05,
+  "shape": [
+    512,
+    512
+  ],
+  "reference_sha256": "f9378c2add49501525aaac7c181c94cac7027c7b9260a40853d50a59e77c48c8",
+  "noisy_sha256": "8e69812683458c244ae6f3fdb7e18464ff5c458510538cdff6e3c594d4958153"
+}

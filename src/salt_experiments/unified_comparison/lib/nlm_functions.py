@@ -18,7 +18,7 @@ def mirror_cpu(A, f):
     A : np.ndarray
         2D grayscale image of shape (n, m).
     f : int
-        Patch radius (padding width). The output will have 2*f extra pixels
+        Padding width. The output will have 2*f extra pixels
         on each side (top, bottom, left, right).
 
     Returns
@@ -75,22 +75,24 @@ def NLM_fast_cpu(img, h, f, t):
     m, n = img.shape
     filtered = np.zeros((m, n), dtype=img.dtype)
 
-    # Mirror padding to safely extract patches at borders
-    img_n = mirror_cpu(img, f)
+    # A candidate center can be t pixels from the target and its patch
+    # extends another f pixels.  Padding by f alone is insufficient.
+    padding = f + t
+    img_n = mirror_cpu(img, padding)
 
     for i in range(m):         # spatial loop over original image coordinates
         for j in range(n):
-            im = i + f         # position in padded image
-            jn = j + f
+            im = i + padding   # position in padded image
+            jn = j + padding
 
             # Reference patch W1 around (im, jn) in padded image
             W1 = img_n[im-f:im+f+1, jn-f:jn+f+1]
 
             # Define search window bounds in padded coordinates
-            rmin = max(im-t, f)
-            rmax = min(im+t, m+f-1)
-            smin = max(jn-t, f)
-            smax = min(jn+t, n+f-1)
+            rmin = im - t
+            rmax = im + t
+            smin = jn - t
+            smax = jn + t
 
             NL = 0.0          # weighted intensity sum
             Z = 0.0           # weight normalization (sum of weights)
@@ -123,7 +125,7 @@ def mirror_gpu(A, f):
     A : cp.ndarray
         2D grayscale image of shape (n, m) on GPU.
     f : int
-        Patch radius (padding width).
+        Padding width.
 
     Returns
     -------
@@ -155,7 +157,7 @@ def mirror_gpu(A, f):
 
 nlm_kernel_global_code = r'''
 // Global-memory NLM kernel (single-channel, float32).
-// - img_n: mirrored padded image (shape (m+2*f, n+2*f) flattened row-major)
+// - img_n: mirrored padded image (shape (m+2*(f+t), n+2*(f+t)) flattened row-major)
 // - output: filtered image (shape (m, n) flattened row-major)
 // - m, n: original image height and width
 // - f: patch radius
@@ -175,8 +177,11 @@ void nlm_kernel_global(
         return;
 
     // Coordinates in the padded image
-    int im = i + f;
-    int jm = j + f;
+    // Padding is f+t: t for the candidate-center displacement and f for
+    // the candidate patch extent. This makes every access below in-bounds.
+    int padding = f + t;
+    int im = i + padding;
+    int jm = j + padding;
 
     float NL = 0.0f;  // weighted intensity sum
     float Z = 0.0f;   // normalization (sum of weights)
@@ -239,8 +244,10 @@ def NLM_fast_cuda_global(img, h, f, t):
     img = img.astype(cp.float32)
     m, n = img.shape
 
-    # Mirror padding on GPU for safe patch extraction
-    padded = mirror_gpu(img, f)
+    # A candidate patch can reach f+t pixels beyond the target center.
+    # Padding by that combined radius makes the full search window safe at
+    # every image boundary.
+    padded = mirror_gpu(img, f + t)
 
     # Compile CUDA kernel
     module = cp.RawModule(code=nlm_kernel_global_code, options=('-std=c++11',))

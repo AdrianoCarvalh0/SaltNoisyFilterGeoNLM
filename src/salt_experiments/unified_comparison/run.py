@@ -22,6 +22,7 @@ os.environ['NUMBA_NUM_THREADS'] = '8'
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+WORKER_LIMIT = 8
 
 import cupy as cp
 import numpy as np
@@ -49,7 +50,7 @@ DATASET_IMAGES = {
     'set50': [str(k) for k in range(0, 50)],        # 0..49 (50 images)
 }
 PROTOCOL = {
-    'version': 2, 'seed': 42, 'tolerances': [0, 4],
+    'version': 3, 'seed': 42, 'tolerances': [0, 4],
     'reference_source': 'data/input/<dataset>; grayscale; float32 in [0,255]',
     'nlm': {'f': 1, 't': 3, 'padding': 't+f', 'offsets_by_density': {
         'low': [-120, 120], 'moderate': [10, 170], 'medium': [40, 170],
@@ -65,7 +66,8 @@ PROTOCOL = {
     'spatial_weights': [1., 1., 10.], 'z_alpha': 1.96, 'outlier_alpha': 0.,
     'noise': 'paired_scaled_uniform_v1; sample without replacement',
     'metrics': 'clip to [0,255], cast uint8, data_range=255',
-    'nlm_backend': 'NLM_fast_cuda_global; mirror padding t+f (bounds-safe)',
+    'nlm_backend': 'NLM_fast_cuda_global; symmetric mirror padding f+t (bounds-safe)',
+    'execution': {'joblib_workers': WORKER_LIMIT, 'blas_threads': 1, 'numba_threads': 8},
 }
 
 
@@ -172,15 +174,18 @@ def run_case(reference, dataset, level, tolerance, name, output, methods):
             filtered = nlm_filter(noisy, info['h'])
         elif method == 'ianlm':
             filtered, stats = Parallel_Switch_ANLM(mirror_cpu(noisy, 1), f=1, t=3,
-                h=1., impulse_tolerance=tolerance, return_stats=True)
+                h=1., n_jobs=WORKER_LIMIT, impulse_tolerance=tolerance, return_stats=True)
             info.update(h=1., h_source='fixed_independent', **stats)
         elif method == 'ghnlm':
-            filtered, h, *_ = run_ghnlm_impulse_tolerance_pipeline(**common, nn=7)
+            filtered, h, *_ = run_ghnlm_impulse_tolerance_pipeline(
+                **common, nn=7, n_jobs=WORKER_LIMIT
+            )
             info.update(h=h, h_source='fixed_independent')
         elif method == 'gnlm':
             gamma = 1.4 if nlm['h'] < 60 or nlm['sigma'] < 10 else 1.55
             filtered, h, *_ = run_geonlm_pipeline(reference, nlm['h'], noisy,
-                                                  f=1, t=3, mult=gamma, nn=7)
+                                                  f=1, t=3, mult=gamma, nn=7,
+                                                  n_jobs=WORKER_LIMIT)
             info.update(h=h, gamma=gamma, h_source='scaled_current_nlm')
         elif method == 'median':
             filtered = median_filter(noisy, size=3, mode='reflect')

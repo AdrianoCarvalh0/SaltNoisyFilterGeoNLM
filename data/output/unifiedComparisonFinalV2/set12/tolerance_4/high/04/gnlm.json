@@ -1,0 +1,24 @@
+{
+  "dataset": "set12",
+  "level": "high",
+  "file_name": "04",
+  "tolerance": 4,
+  "density": 0.1,
+  "shape": [
+    512,
+    512
+  ],
+  "reference_sha256": "9a510e4529cefa5502fa01fc0c5cf153cddd4831f7bde4c5e933427ab71dd1b9",
+  "noisy_sha256": "eadc5d6ce815e22299466860ae91a44e17dc0aa10539739faa73baf9c0ea5fe6",
+  "method": "gnlm",
+  "h": 575.0500000000001,
+  "gamma": 1.55,
+  "h_source": "scaled_current_nlm",
+  "psnr": 26.47992189138186,
+  "ssim": 0.7495627944754828,
+  "score": 50.71810066946507,
+  "time_filter_call_s": 47.24640439200448,
+  "cpu_worker_limit": 8,
+  "numba_thread_limit": 8,
+  "nlm_backend": "NLM_fast_cuda_global"
+}
