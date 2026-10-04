@@ -29,6 +29,9 @@ WORKER_LIMIT = 8
 import cupy as cp
 import numpy as np
 import pandas as pd
+import numba
+import scipy
+import skimage
 from PIL import Image
 from scipy.ndimage import median_filter
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity
@@ -74,15 +77,47 @@ def git_revision():
         return 'unavailable'
 
 
+def git_describe():
+    try:
+        return subprocess.check_output(
+            ['git', 'describe', '--tags', '--always', '--dirty'], cwd=ROOT, text=True
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return 'unavailable'
+
+
+def file_sha256(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def cpu_model():
+    try:
+        for line in Path('/proc/cpuinfo').read_text().splitlines():
+            if line.startswith('model name'):
+                return line.split(':', 1)[1].strip()
+    except OSError:  # pragma: no cover - host dependent
+        pass
+    return platform.processor() or 'unavailable'
+
+
 def runtime_manifest():
     manifest = {
         'python': sys.version,
         'platform': platform.platform(),
         'numpy': np.__version__,
         'pandas': pd.__version__,
+        'scipy': scipy.__version__,
+        'scikit_image': skimage.__version__,
+        'numba': numba.__version__,
         'cupy': cp.__version__,
+        'cpu_model': cpu_model(),
+        'os_cpu_count': os.cpu_count(),
         'cpu_worker_limit': WORKER_LIMIT,
         'numba_thread_limit': int(os.environ['NUMBA_NUM_THREADS']),
+        'blas_thread_limits': {
+            name: os.environ.get(name)
+            for name in ('OPENBLAS_NUM_THREADS', 'MKL_NUM_THREADS', 'OMP_NUM_THREADS')
+        },
     }
     try:
         properties = cp.cuda.runtime.getDeviceProperties(0)
@@ -90,6 +125,10 @@ def runtime_manifest():
         manifest['cuda_device'] = name.decode() if isinstance(name, bytes) else str(name)
         manifest['cuda_total_global_memory'] = int(properties['totalGlobalMem'])
         manifest['cuda_runtime'] = int(cp.cuda.runtime.runtimeGetVersion())
+        manifest['cuda_driver'] = int(cp.cuda.runtime.driverGetVersion())
+        manifest['cuda_compute_capability'] = [
+            int(properties['major']), int(properties['minor'])
+        ]
     except Exception as exc:  # pragma: no cover - host dependent
         manifest['cuda_device'] = f'unavailable: {exc}'
     return manifest
@@ -98,23 +137,49 @@ def runtime_manifest():
 PROTOCOL = {
     'version': 4, 'seed': 42, 'tolerances': [0, 4],
     'git_revision': git_revision(),
+    'git_describe': git_describe(),
     'source_tree_sha256': source_tree_sha256(),
+    'dependency_lock_sha256': {
+        str(path.relative_to(ROOT)): file_sha256(path)
+        for path in (
+            ROOT / '.devcontainer' / 'conda-spec-linux-64.txt',
+            ROOT / '.devcontainer' / 'requirements-pip.txt',
+        )
+    },
     'reference_source': 'data/input/<dataset>; grayscale; float32 in [0,255]',
+    'dataset_images': DATASET_IMAGES,
+    'densities': LEVELS,
+    'methods': list(METHODS),
     'nlm': {'f': 1, 't': 3, 'padding': 't+f', 'offsets_by_density': {
         'low': [-120, 120], 'moderate': [10, 170], 'medium': [40, 170],
         'high': [100, 280], 'extreme': [250, 600]},
             'selection': 'maximize 0.5*PSNR + 50*SSIM; uint8; smallest h on ties'},
-    'ianlm': {'f': 1, 't': 3, 'h': 1.0},
-    'ghnlm': {'f': 1, 't': 3, 'h': 1.0, 'k': 7},
+    'ianlm': {'f': 1, 't': 3, 'h': 1.0, 'padding': 'f+t',
+              'search_grid': 'inclusive (2t+1)^2', 'switching': 'input mask'},
+    'ghnlm': {'f': 1, 't': 3, 'h': 1.0, 'k': 7, 'padding': 'f+t',
+              'search_grid': 'inclusive (2t+1)^2', 'source': 'target coordinate'},
     'gnlm': {'f': 1, 't': 3, 'k': 7,
-             'h': 'h_nlm*(1.40 if h_nlm<60 or sigma<10 else 1.55)'},
+             'h': 'h_nlm*(1.40 if h_nlm<60 or sigma<10 else 1.55)',
+             'padding': 'f+t', 'search_grid': 'inclusive (2t+1)^2',
+             'source': 'target coordinate'},
     'nlmedians': {'f': 2, 't': 2, 'h_multiplier': .005,
                    'selection': 'Set12 medium-noise structural ablation; PSNR/runtime compromise'},
     'aswmf': {'radius': 3, 'same_tolerance_as_ianlm': True},
     'median': {'size': 3, 'mode': 'reflect'},
     'spatial_weights': [1., 1., 10.], 'z_alpha': 1.96, 'outlier_alpha': 0.,
-    'noise': 'paired_scaled_uniform_v1; sample without replacement',
-    'metrics': 'clip to [0,255], cast uint8, data_range=255',
+    'noise': {
+        'generator': 'add_near_extreme_impulse_noise',
+        'assignment': 'sample 2*ceil((density/2)*N) positions without replacement',
+        'salt_probability': 'density/2', 'pepper_probability': 'density/2',
+        'value_bands': '[0,tolerance] and [255-tolerance,255], discrete uniform',
+        'pairing': 'same seed, positions, polarity, and uniform draws across tolerances',
+    },
+    'metrics': {
+        'quantization': 'clip to [0,255], cast uint8', 'data_range': 255,
+        'psnr': 'skimage.metrics.peak_signal_noise_ratio',
+        'ssim': 'skimage.metrics.structural_similarity defaults; 2D grayscale',
+        'score': '0.5*PSNR + 50*SSIM',
+    },
     'nlm_backend': 'NLM_fast_cuda_global; symmetric mirror padding f+t (bounds-safe)',
     'execution': {'joblib_workers': WORKER_LIMIT, 'blas_threads': 1, 'numba_threads': 8},
 }
@@ -185,12 +250,16 @@ def run_case(reference, dataset, level, tolerance, name, output, methods):
     destination.mkdir(parents=True, exist_ok=True)
     noisy, mask = add_near_extreme_impulse_noise(
         reference, salt_prob=LEVELS[level] / 2, pepper_prob=LEVELS[level] / 2,
-        impulse_tolerance=tolerance, seed=42, return_mask=True,
+        impulse_tolerance=tolerance, seed=PROTOCOL['seed'], return_mask=True,
     )
     noisy = np.asarray(noisy, dtype=np.float32)
     case = {'dataset': dataset, 'level': level, 'file_name': name, 'tolerance': tolerance,
             'density': LEVELS[level], 'shape': list(reference.shape),
-            'reference_sha256': digest(reference), 'noisy_sha256': digest(noisy)}
+            'noise_seed': PROTOCOL['seed'], 'salt_probability': LEVELS[level] / 2,
+            'pepper_probability': LEVELS[level] / 2,
+            'reference_sha256': digest(reference), 'noisy_sha256': digest(noisy),
+            'corruption_mask_sha256': digest(mask),
+            'assigned_impulses': int(mask.sum())}
     path = destination / 'case.json'
     if path.exists() and json.loads(path.read_text()) != case:
         raise ValueError(f'Case identity changed: {destination}')
@@ -201,6 +270,8 @@ def run_case(reference, dataset, level, tolerance, name, output, methods):
     tp = int(np.count_nonzero(detected & mask))
     atomic_json(destination / 'detector.json', {
         'precision': tp / max(1, int(detected.sum())), 'recall': tp / max(1, int(mask.sum())),
+        'true_positives': tp, 'detected_pixels': int(detected.sum()),
+        'assigned_impulses': int(mask.sum()),
         'false_positives': int(np.count_nonzero(detected & ~mask)),
     })
     common = dict(img_original=reference, img_noisy=noisy, h_base=1., mult=1.,
@@ -214,6 +285,7 @@ def run_case(reference, dataset, level, tolerance, name, output, methods):
             continue
         print(f'START {dataset} tau={tolerance} {level} {name} {method}', flush=True)
         info = {}
+        method_parameters = {}
         if method == 'nlm':
             _, info = calibrate(reference, noisy, destination, level)
         if method in ('gnlm', 'nlmedians'):
@@ -221,34 +293,41 @@ def run_case(reference, dataset, level, tolerance, name, output, methods):
         start = time.perf_counter()
         if method == 'nlm':
             filtered = nlm_filter(noisy, info['h'])
+            method_parameters.update(f=1, t=3, h=info['h'])
         elif method == 'ianlm':
             filtered, stats = Parallel_Switch_ANLM(noisy, f=1, t=3,
                 h=1., n_jobs=WORKER_LIMIT, impulse_tolerance=tolerance, return_stats=True)
             info.update(h=1., h_source='fixed_independent', **stats)
+            method_parameters.update(f=1, t=3, h=1.)
         elif method == 'ghnlm':
             filtered, h, *_ = run_ghnlm_impulse_tolerance_pipeline(
                 **common, nn=7, n_jobs=WORKER_LIMIT
             )
             info.update(h=h, h_source='fixed_independent')
+            method_parameters.update(f=1, t=3, k=7, h=h)
         elif method == 'gnlm':
             gamma = 1.4 if nlm['h'] < 60 or nlm['sigma'] < 10 else 1.55
             filtered, h, *_ = run_geonlm_pipeline(reference, nlm['h'], noisy,
                                                   f=1, t=3, mult=gamma, nn=7,
                                                   n_jobs=WORKER_LIMIT)
             info.update(h=h, gamma=gamma, h_source='scaled_current_nlm')
+            method_parameters.update(f=1, t=3, k=7, h=h, gamma=gamma)
         elif method == 'median':
             filtered = median_filter(noisy, size=3, mode='reflect')
+            method_parameters.update(window_size=3, boundary_mode='reflect')
         elif method == 'aswmf':
             filtered = aswmf_impulse_tolerance_filter(noisy, impulse_tolerance=tolerance,
                                                       radius=3)
+            method_parameters.update(radius=3, impulse_tolerance=tolerance)
         else:
             h = nlm['h'] * .005
             filtered = run_nlmedians(reference=reference, noisy=noisy, h=h, f=2, t=2)['filtered']
             info.update(h=h, h_source='scaled_current_nlm')
+            method_parameters.update(f=2, t=2, h=h)
         elapsed = time.perf_counter() - start
         if filtered.shape != reference.shape:
             raise ValueError(f'Output shape mismatch for {method}')
-        row = {**case, 'method': method, **info, **metrics(reference, filtered),
+        row = {**case, 'method': method, **info, **method_parameters, **metrics(reference, filtered),
                'time_filter_call_s': elapsed,
                'cpu_worker_limit': 8, 'numba_thread_limit': 8,
                'nlm_backend': 'NLM_fast_cuda_global'}
@@ -292,6 +371,16 @@ def main():
         raise ValueError('Different protocol in output directory; use a new directory.')
     atomic_json(manifest, PROTOCOL)
     atomic_json(args.output / 'runtime.json', runtime_manifest())
+    requests_path = args.output / 'run_requests.json'
+    requests = json.loads(requests_path.read_text()) if requests_path.exists() else []
+    request = {
+        'started_utc': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+        'argv': sys.argv[1:], 'datasets': args.datasets, 'levels': args.levels,
+        'tolerances': args.tolerances, 'max_images': args.max_images,
+        'requested_methods': args.methods, 'effective_methods': methods,
+    }
+    requests.append(request)
+    atomic_json(requests_path, requests)
     # Warm up kernels outside per-image timings; no reference data used here.
     dummy = np.full((24, 24), 128, dtype=np.float32); dummy[12, 12] = 0
     nlm_filter(dummy, 100.)

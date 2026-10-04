@@ -14,7 +14,7 @@ from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from run import DATASET_IMAGES, LEVELS, METHODS  # noqa: E402
+from run import DATASET_IMAGES, LEVELS, METHODS, PROTOCOL  # noqa: E402
 
 
 def digest(array):
@@ -35,9 +35,16 @@ def validate(output, require_complete=False, require_provenance=False):
     if require_provenance:
         assert protocol['version'] >= 4
         assert protocol['git_revision'] != 'unavailable'
+        assert protocol['git_describe'] != 'unavailable'
         assert len(protocol['source_tree_sha256']) == 64
+        assert protocol['dataset_images'] == DATASET_IMAGES
+        assert protocol['densities'] == LEVELS
+        assert protocol['methods'] == list(METHODS)
         runtime = json.loads((output / 'runtime.json').read_text())
-        assert 'python' in runtime and 'platform' in runtime
+        assert {'python', 'platform', 'numpy', 'scikit_image', 'numba', 'cupy',
+                'cpu_model', 'cuda_device'} <= runtime.keys()
+        requests = json.loads((output / 'run_requests.json').read_text())
+        assert requests
 
     rows = []
     case_paths = sorted(output.glob('set*/tolerance_*/*/*/case.json'))
@@ -50,11 +57,16 @@ def validate(output, require_complete=False, require_provenance=False):
         assert tuple(case['shape']) == reference.shape == noisy.shape == mask.shape
         assert case['reference_sha256'] == digest(reference)
         assert case['noisy_sha256'] == digest(noisy)
+        assert case['corruption_mask_sha256'] == digest(mask)
+        assert case['assigned_impulses'] == int(mask.sum())
 
         detected = (noisy <= case['tolerance']) | (noisy >= 255 - case['tolerance'])
         detector = json.loads((directory / 'detector.json').read_text())
         tp = int(np.count_nonzero(detected & mask))
         assert detector['false_positives'] == int(np.count_nonzero(detected & ~mask))
+        assert detector['true_positives'] == tp
+        assert detector['detected_pixels'] == int(detected.sum())
+        assert detector['assigned_impulses'] == int(mask.sum())
         assert detector['precision'] == tp / max(1, int(detected.sum()))
         assert detector['recall'] == tp / max(1, int(mask.sum()))
 
