@@ -87,18 +87,22 @@ def _matrix_l1_norm_patch_diff(img, i1, j1, i2, j2, f):
 def _nlmedians_cpu(img, h, f, t):
     m, n = img.shape
     filtered = np.zeros((m, n), dtype=np.float32)
-    img_n = _symmetric_pad(img.astype(np.float32), f)
+    # A candidate center may be t pixels from its target and its patch extends
+    # another f pixels.  f+t symmetric padding makes the declared full search
+    # grid available at every pixel, including image boundaries.
+    padding = f + t
+    img_n = _symmetric_pad(img.astype(np.float32), padding)
     h2 = h * h
 
     for i in prange(m):
         for j in range(n):
-            im = i + f
-            jn = j + f
+            im = i + padding
+            jn = j + padding
 
-            rmin = max(im - t, f)
-            rmax = min(im + t, m + f)
-            smin = max(jn - t, f)
-            smax = min(jn + t, n + f)
+            rmin = im - t
+            rmax = im + t + 1
+            smin = jn - t
+            smax = jn + t + 1
 
             nl_value = 0.0
             z_value = 0.0

@@ -29,6 +29,20 @@ class ImpulseToleranceTests(unittest.TestCase):
         self.assertTrue(np.all((noisy[mask] <= 4) | (noisy[mask] >= 251)))
         np.testing.assert_array_equal(noisy[~mask], image[~mask])
 
+    def test_matched_tolerances_reuse_assignment_mask_and_polarity(self):
+        image = np.full((32, 32), 128, dtype=np.float32)
+        noisy_0, mask_0 = add_near_extreme_impulse_noise(
+            image, salt_prob=0.05, pepper_prob=0.05, impulse_tolerance=0,
+            seed=42, return_mask=True,
+        )
+        noisy_4, mask_4 = add_near_extreme_impulse_noise(
+            image, salt_prob=0.05, pepper_prob=0.05, impulse_tolerance=4,
+            seed=42, return_mask=True,
+        )
+        np.testing.assert_array_equal(mask_0, mask_4)
+        np.testing.assert_array_equal(noisy_0 == 0, noisy_4 <= 4)
+        np.testing.assert_array_equal(noisy_0 == 255, noisy_4 >= 251)
+
     def test_zero_tolerance_preserves_original_aswmf_behavior(self):
         image = np.arange(81, dtype=np.float32).reshape(9, 9) * 3
         old_style = aswmf_filter(image)

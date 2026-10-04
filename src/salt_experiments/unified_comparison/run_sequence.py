@@ -49,6 +49,13 @@ def main():
     if any(n != EXPECTED_RECORDS for n in counts.values()):
         update('incomplete', counts=counts)
         raise SystemExit('Unexpected number of completed records.')
+    validation = subprocess.run([
+        sys.executable, str(Path(__file__).with_name('validate_archive.py')),
+        '--output', str(output), '--require-complete', '--require-provenance',
+    ], cwd=root)
+    if validation.returncode:
+        update('invalid', counts=counts, exit_code=validation.returncode)
+        raise SystemExit(validation.returncode)
     update('complete', counts=counts)
 
 

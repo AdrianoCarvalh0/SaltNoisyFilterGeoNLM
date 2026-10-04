@@ -138,8 +138,10 @@ SaltAndPepper/
 Earlier per-level experiments, exploratory parameter studies, notebooks, plots,
 and their historical outputs live in [`legacy/`](legacy/). They are retained for
 provenance only and are not interchangeable with the canonical protocol. The
-article cites the canonical runner and the archived final records in
-`data/output/unifiedComparisonFinal/`; use `unified_comparison/` for a new run.
+article cites the canonical runner and the regenerated version-3 records in
+`data/output/unifiedComparisonFinalV2/`; use `unified_comparison/` for a new run.
+The earlier `unifiedComparisonFinal/` archive is retained unchanged for
+provenance and must not be mixed with V2 results.
 
 ---
 
@@ -207,21 +209,27 @@ then the expensive `gnlm`, tracking progress in `batch_status.json`:
 python src/salt_experiments/unified_comparison/run_sequence.py
 ```
 
-### Targeted GNLM sensitivity pilot
+### Auxiliary sensitivity and ablation studies
 
-To inspect the reported GNLM structure `(f, t, k) = (1, 3, 7)` before making
-a broader claim, run the small Set12 medium-density pilot. It uses images
-`01`, `06`, and `11`, both final tolerances, and four nearby alternatives;
-it writes per-case records plus `results.csv` and `summary.csv`.
+All auxiliary studies are indexed in
+[`studies/ablations/README.md`](src/salt_experiments/unified_comparison/studies/ablations/README.md).
+They store only protocols, calibration curves, and tabular results below
+`data/output/studies/ablations/`; they never replace the official archive.
+
+The Set12-medium NLMedians grid study selects `(f, t) = (2, 2)` as the fixed
+V4 baseline by the PSNR/runtime compromise. It does not claim universal
+optimality or use Set50 for configuration selection.
+
+To inspect the GNLM structural setting `(f, t, k) = (1, 3, 7)`, run the small
+Set12 medium-density pilot. It uses images `01`, `06`, and `11`, both final
+tolerances, and four nearby alternatives:
 
 ```bash
 python src/salt_experiments/unified_comparison/studies/ablations/gnlm_structural_sensitivity.py
 ```
 
 This is a descriptive pilot, not an optimization over all images, densities,
-or tolerances. It retains only metadata, calibration curves, and tabular
-results under `data/output/studies/ablations/`; inspect its planned workload
-first with `--dry-run`.
+or tolerances; inspect its planned workload first with `--dry-run`.
 
 ### Noise densities and impulse tolerance
 
@@ -254,8 +262,8 @@ Your run writes everything to **`data/output/unifiedComparison/`**:
 
 ### Headline findings (mean score)
 
-- **IANLM and GHNLM lead** in essentially every condition, virtually tied on
-  PSNR/SSIM — but **IANLM is ~30–100× faster** than GHNLM for equivalent quality.
+- **IANLM leads GHNLM** in PSNR and SSIM in every matched V2 condition. The
+  recorded filtering-call times are configuration-specific; GHNLM is much slower.
 - **ASWMF** is the fastest overall and solid at tolerance `0`, but **collapses at
   tolerance `4`** (it depends on impulses sitting at exact 0/255).
 - **Median** is a stable, cheap baseline; **GNLM / NLMedians / plain NLM** trail.

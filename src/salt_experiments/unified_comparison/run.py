@@ -11,6 +11,8 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import platform
+import subprocess
 import sys
 import time
 
@@ -33,7 +35,7 @@ from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 from skimage.restoration import estimate_sigma
 
 from lib.noisy_functions import add_near_extreme_impulse_noise
-from lib.nlm_functions import NLM_fast_cuda_global, compute_adaptive_q, mirror_cpu
+from lib.nlm_functions import NLM_fast_cuda_global, compute_adaptive_q
 from lib.anlm_functions import Parallel_Switch_ANLM
 from lib.geonlm_functions import run_geonlm_pipeline
 from lib.impulse_tolerance_filters import (
@@ -49,8 +51,54 @@ DATASET_IMAGES = {
     'set12': [f'{k:02d}' for k in range(1, 12)],   # 01..11 (11 images)
     'set50': [str(k) for k in range(0, 50)],        # 0..49 (50 images)
 }
+
+
+def source_tree_sha256():
+    """Digest the canonical Python sources that define this experiment."""
+    package = Path(__file__).resolve().parent
+    digest_value = hashlib.sha256()
+    for path in sorted(package.rglob('*.py')):
+        digest_value.update(path.relative_to(package).as_posix().encode())
+        digest_value.update(b'\0')
+        digest_value.update(path.read_bytes())
+        digest_value.update(b'\0')
+    return digest_value.hexdigest()
+
+
+def git_revision():
+    try:
+        return subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return 'unavailable'
+
+
+def runtime_manifest():
+    manifest = {
+        'python': sys.version,
+        'platform': platform.platform(),
+        'numpy': np.__version__,
+        'pandas': pd.__version__,
+        'cupy': cp.__version__,
+        'cpu_worker_limit': WORKER_LIMIT,
+        'numba_thread_limit': int(os.environ['NUMBA_NUM_THREADS']),
+    }
+    try:
+        properties = cp.cuda.runtime.getDeviceProperties(0)
+        name = properties['name']
+        manifest['cuda_device'] = name.decode() if isinstance(name, bytes) else str(name)
+        manifest['cuda_total_global_memory'] = int(properties['totalGlobalMem'])
+        manifest['cuda_runtime'] = int(cp.cuda.runtime.runtimeGetVersion())
+    except Exception as exc:  # pragma: no cover - host dependent
+        manifest['cuda_device'] = f'unavailable: {exc}'
+    return manifest
+
+
 PROTOCOL = {
-    'version': 3, 'seed': 42, 'tolerances': [0, 4],
+    'version': 4, 'seed': 42, 'tolerances': [0, 4],
+    'git_revision': git_revision(),
+    'source_tree_sha256': source_tree_sha256(),
     'reference_source': 'data/input/<dataset>; grayscale; float32 in [0,255]',
     'nlm': {'f': 1, 't': 3, 'padding': 't+f', 'offsets_by_density': {
         'low': [-120, 120], 'moderate': [10, 170], 'medium': [40, 170],
@@ -60,7 +108,8 @@ PROTOCOL = {
     'ghnlm': {'f': 1, 't': 3, 'h': 1.0, 'k': 7},
     'gnlm': {'f': 1, 't': 3, 'k': 7,
              'h': 'h_nlm*(1.40 if h_nlm<60 or sigma<10 else 1.55)'},
-    'nlmedians': {'f': 2, 't': 3, 'h_multiplier': .005},
+    'nlmedians': {'f': 2, 't': 2, 'h_multiplier': .005,
+                   'selection': 'Set12 medium-noise structural ablation; PSNR/runtime compromise'},
     'aswmf': {'radius': 3, 'same_tolerance_as_ianlm': True},
     'median': {'size': 3, 'mode': 'reflect'},
     'spatial_weights': [1., 1., 10.], 'z_alpha': 1.96, 'outlier_alpha': 0.,
@@ -173,7 +222,7 @@ def run_case(reference, dataset, level, tolerance, name, output, methods):
         if method == 'nlm':
             filtered = nlm_filter(noisy, info['h'])
         elif method == 'ianlm':
-            filtered, stats = Parallel_Switch_ANLM(mirror_cpu(noisy, 1), f=1, t=3,
+            filtered, stats = Parallel_Switch_ANLM(noisy, f=1, t=3,
                 h=1., n_jobs=WORKER_LIMIT, impulse_tolerance=tolerance, return_stats=True)
             info.update(h=1., h_source='fixed_independent', **stats)
         elif method == 'ghnlm':
@@ -194,7 +243,7 @@ def run_case(reference, dataset, level, tolerance, name, output, methods):
                                                       radius=3)
         else:
             h = nlm['h'] * .005
-            filtered = run_nlmedians(reference=reference, noisy=noisy, h=h, f=2, t=3)['filtered']
+            filtered = run_nlmedians(reference=reference, noisy=noisy, h=h, f=2, t=2)['filtered']
             info.update(h=h, h_source='scaled_current_nlm')
         elapsed = time.perf_counter() - start
         if filtered.shape != reference.shape:
@@ -242,10 +291,11 @@ def main():
     if manifest.exists() and json.loads(manifest.read_text()) != PROTOCOL:
         raise ValueError('Different protocol in output directory; use a new directory.')
     atomic_json(manifest, PROTOCOL)
+    atomic_json(args.output / 'runtime.json', runtime_manifest())
     # Warm up kernels outside per-image timings; no reference data used here.
     dummy = np.full((24, 24), 128, dtype=np.float32); dummy[12, 12] = 0
     nlm_filter(dummy, 100.)
-    Parallel_Switch_ANLM(mirror_cpu(dummy, 1), f=1, t=3, h=1., return_stats=True)
+    Parallel_Switch_ANLM(dummy, f=1, t=3, h=1., return_stats=True)
     try:
         for dataset in args.datasets:
             names = DATASET_IMAGES[dataset][:args.max_images]

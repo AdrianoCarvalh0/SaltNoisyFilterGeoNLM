@@ -10,7 +10,7 @@ from joblib import Parallel, delayed
 from .nlm_functions import mirror_cpu
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 
-def process_pixel(i, j, img_n, f, t, h, nn, m, n):
+def process_pixel(i, j, img_n, f, t, h, nn, m, n, padding):
     """
     Compute the GEONLM (graph/knn-based) filtered value for a single pixel (i, j).
 
@@ -19,7 +19,7 @@ def process_pixel(i, j, img_n, f, t, h, nn, m, n):
     i, j : int
         Pixel coordinates in the original (unpadded) image domain.
     img_n : np.ndarray
-        Padded image (mirror padding) of shape (m + 2*f, n + 2*f).
+        Symmetrically padded image with padding f+t.
     f : int
         Patch radius. Each patch has size (2*f + 1) x (2*f + 1).
     t : int
@@ -37,18 +37,18 @@ def process_pixel(i, j, img_n, f, t, h, nn, m, n):
         Filtered value for pixel (i, j).
     """
     # Map (i, j) from original image to padded coordinates
-    im = i + f
-    jn = j + f
+    im = i + padding
+    jn = j + padding
 
     # Central patch (reference) around (im, jn)
     patch_central = img_n[im - f:im + f + 1, jn - f:jn + f + 1]
     central = patch_central.ravel()  # flatten to 1D
 
     # Search window bounds in padded coordinates (clamped to valid region)
-    rmin = max(im - t, f)
-    rmax = min(im + t, m + f)
-    smin = max(jn - t, f)
-    smax = min(jn + t, n + f)
+    rmin = im - t
+    rmax = im + t + 1
+    smin = jn - t
+    smax = jn + t + 1
 
     # Total number of candidate patches inside the search window
     n_patches = (rmax - rmin) * (smax - smin)
@@ -69,8 +69,9 @@ def process_pixel(i, j, img_n, f, t, h, nn, m, n):
             neighbor = W.ravel()
             dataset[k, :] = neighbor
             pixels_search[k] = img_n[r, s]
-            # Detect which row corresponds to the central patch
-            if np.array_equal(central, neighbor):
+            # The source is the target coordinate, not an equal-valued patch.
+            # Repeated textures can contain several identical patch vectors.
+            if r == im and s == jn:
                 source = k
             k += 1
 
@@ -79,7 +80,8 @@ def process_pixel(i, j, img_n, f, t, h, nn, m, n):
         source = 0
 
     # Build KNN graph (weighted by Euclidean distances between patches)
-    knnGraph = sknn.kneighbors_graph(dataset, n_neighbors=nn, mode='distance')
+    n_neighbors = min(nn, max(1, n_patches - 1))
+    knnGraph = sknn.kneighbors_graph(dataset, n_neighbors=n_neighbors, mode='distance')
     G = nx.from_scipy_sparse_array(knnGraph)
 
     # Shortest paths from 'source' to all nodes (Dijkstra on weighted graph)
@@ -103,7 +105,7 @@ def process_pixel(i, j, img_n, f, t, h, nn, m, n):
     return NL / Z if Z > 0 else img_n[im, jn]
 
 
-def Parallel_GEONLM(img_n, f, t, h, nn, n_jobs=8):
+def Parallel_GEONLM(img_n, f, t, h, nn, n_jobs=8, padding=None):
     """
     Apply the GEONLM filter in parallel over all pixels of the original image domain.
 
@@ -125,15 +127,13 @@ def Parallel_GEONLM(img_n, f, t, h, nn, n_jobs=8):
     np.ndarray
         Filtered image of shape (m, n).
     """
-    # Padded image dimensions -> original domain dims
-    print(f'img_n.shape: {img_n.shape}')
-    m = img_n.shape[0] - 2 * f
-    n = img_n.shape[1] - 2 * f
-    print(f'M: {m}, N: {n}')
+    padding = f + t if padding is None else padding
+    m = img_n.shape[0] - 2 * padding
+    n = img_n.shape[1] - 2 * padding
 
     # Parallel evaluation over all (i, j) in the original domain
     filtered = Parallel(n_jobs=n_jobs)(
-        delayed(process_pixel)(i, j, img_n, f, t, h, nn, m, n)
+        delayed(process_pixel)(i, j, img_n, f, t, h, nn, m, n, padding)
         for i in range(m)
         for j in range(n)
     )
@@ -147,18 +147,15 @@ def run_geonlm_pipeline(
     img_original, h_base, img_noisy, f, t, mult, nn=10, n_jobs=8
 ):
 
-    img_noisy_mirror = mirror_cpu(img_noisy, f)    
-   
-    img_n_geo = np.pad(img_noisy_mirror, ((f, f), (f, f)), 'symmetric')  
-   
-   
+    padding = f + t
+    img_n_geo = mirror_cpu(np.asarray(img_noisy, dtype=np.float32), padding)
     h_geo = (h_base) * mult
     print(f"\nExecutando GEONLM com h = {h_geo:.2f} (base {h_base} * {mult})")
 
-    img_geo = Parallel_GEONLM(img_n_geo, f=f, t=t, h=h_geo, nn=nn, n_jobs=n_jobs)
-
-    img_geo_no_pad = img_geo[f:-f, f:-f]  # Remove 'f' pixels de cada lado
-    img_geo_no_pad = np.clip(img_geo_no_pad, 0, 255).astype(np.uint8)
+    img_geo = Parallel_GEONLM(
+        img_n_geo, f=f, t=t, h=h_geo, nn=nn, n_jobs=n_jobs, padding=padding
+    )
+    img_geo_no_pad = np.clip(img_geo, 0, 255).astype(np.uint8)
 
     img_ref = np.clip(img_original, 0, 255).astype(np.uint8)   
 

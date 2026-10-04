@@ -1,0 +1,175 @@
+{
+  "study": "nlmedians_structural_sensitivity",
+  "selection_scope": "Set12 only; Set50 excluded from configuration selection",
+  "dataset": "set12",
+  "images": [
+    "01",
+    "02",
+    "03",
+    "04",
+    "05",
+    "06",
+    "07",
+    "08",
+    "09",
+    "10",
+    "11"
+  ],
+  "level": "medium",
+  "density": 0.05,
+  "tolerances": [
+    0,
+    4
+  ],
+  "noise_seed": 42,
+  "h": "0.005 * image-wise calibrated compact-NLM h",
+  "variants": [
+    {
+      "name": "f1_t2",
+      "description": "Patch radius 1; search radius 2",
+      "f": 1,
+      "t": 2,
+      "k": null
+    },
+    {
+      "name": "f1_t3",
+      "description": "Patch radius 1; search radius 3",
+      "f": 1,
+      "t": 3,
+      "k": null
+    },
+    {
+      "name": "f1_t4",
+      "description": "Patch radius 1; search radius 4",
+      "f": 1,
+      "t": 4,
+      "k": null
+    },
+    {
+      "name": "f2_t2",
+      "description": "Patch radius 2; search radius 2",
+      "f": 2,
+      "t": 2,
+      "k": null
+    },
+    {
+      "name": "f2_t3",
+      "description": "Patch radius 2; search radius 3",
+      "f": 2,
+      "t": 3,
+      "k": null
+    },
+    {
+      "name": "f2_t4",
+      "description": "Patch radius 2; search radius 4",
+      "f": 2,
+      "t": 4,
+      "k": null
+    },
+    {
+      "name": "f3_t2",
+      "description": "Patch radius 3; search radius 2",
+      "f": 3,
+      "t": 2,
+      "k": null
+    },
+    {
+      "name": "f3_t3",
+      "description": "Patch radius 3; search radius 3",
+      "f": 3,
+      "t": 3,
+      "k": null
+    },
+    {
+      "name": "f3_t4",
+      "description": "Patch radius 3; search radius 4",
+      "f": 3,
+      "t": 4,
+      "k": null
+    }
+  ],
+  "canonical_protocol": {
+    "version": 4,
+    "seed": 42,
+    "tolerances": [
+      0,
+      4
+    ],
+    "git_revision": "e1794ab439afee4d80fc7294a07e4dcc14b627d6",
+    "source_tree_sha256": "fab39deaa17b897b16a91e365efdcb6657ddd91e8c0014240f138d5171d680f1",
+    "reference_source": "data/input/<dataset>; grayscale; float32 in [0,255]",
+    "nlm": {
+      "f": 1,
+      "t": 3,
+      "padding": "t+f",
+      "offsets_by_density": {
+        "low": [
+          -120,
+          120
+        ],
+        "moderate": [
+          10,
+          170
+        ],
+        "medium": [
+          40,
+          170
+        ],
+        "high": [
+          100,
+          280
+        ],
+        "extreme": [
+          250,
+          600
+        ]
+      },
+      "selection": "maximize 0.5*PSNR + 50*SSIM; uint8; smallest h on ties"
+    },
+    "ianlm": {
+      "f": 1,
+      "t": 3,
+      "h": 1.0
+    },
+    "ghnlm": {
+      "f": 1,
+      "t": 3,
+      "h": 1.0,
+      "k": 7
+    },
+    "gnlm": {
+      "f": 1,
+      "t": 3,
+      "k": 7,
+      "h": "h_nlm*(1.40 if h_nlm<60 or sigma<10 else 1.55)"
+    },
+    "nlmedians": {
+      "f": 2,
+      "t": 3,
+      "h_multiplier": 0.005
+    },
+    "aswmf": {
+      "radius": 3,
+      "same_tolerance_as_ianlm": true
+    },
+    "median": {
+      "size": 3,
+      "mode": "reflect"
+    },
+    "spatial_weights": [
+      1.0,
+      1.0,
+      10.0
+    ],
+    "z_alpha": 1.96,
+    "outlier_alpha": 0.0,
+    "noise": "paired_scaled_uniform_v1; sample without replacement",
+    "metrics": "clip to [0,255], cast uint8, data_range=255",
+    "nlm_backend": "NLM_fast_cuda_global; symmetric mirror padding f+t (bounds-safe)",
+    "execution": {
+      "joblib_workers": 8,
+      "blas_threads": 1,
+      "numba_threads": 8
+    }
+  }
+}

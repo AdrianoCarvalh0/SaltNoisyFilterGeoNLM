@@ -84,6 +84,7 @@ def process_pixel_geonlm_medians(
     nn,
     m,
     n,
+    padding,
     z_alpha=1.96,
     outlier_pixel_alpha=0.0,
     switch_impulse_only=False,
@@ -94,8 +95,8 @@ def process_pixel_geonlm_medians(
     aswmf_weight_other=10.0,
     impulse_tolerance=0,
 ):
-    im = i + f
-    jn = j + f
+    im = i + padding
+    jn = j + padding
     center_value = img_n[im, jn]
 
     if switch_impulse_only and (
@@ -107,10 +108,10 @@ def process_pixel_geonlm_medians(
     patch_central = img_n[im - f:im + f + 1, jn - f:jn + f + 1]
     central = patch_central.ravel()
 
-    rmin = max(im - t, f)
-    rmax = min(im + t, m + f)
-    smin = max(jn - t, f)
-    smax = min(jn + t, n + f)
+    rmin = im - t
+    rmax = im + t + 1
+    smin = jn - t
+    smax = jn + t + 1
 
     n_patches = (rmax - rmin) * (smax - smin)
     patch_size = (2 * f + 1) ** 2
@@ -202,9 +203,11 @@ def Parallel_GEONLMedians(
     aswmf_weight_other=10.0,
     n_jobs=-1,
     impulse_tolerance=0,
+    padding=None,
 ):
-    m = img_n.shape[0] - 2 * f
-    n = img_n.shape[1] - 2 * f
+    padding = f + t if padding is None else padding
+    m = img_n.shape[0] - 2 * padding
+    n = img_n.shape[1] - 2 * padding
     filtered = Parallel(n_jobs=n_jobs)(
         delayed(process_pixel_geonlm_medians)(
             i,
@@ -216,6 +219,7 @@ def Parallel_GEONLMedians(
             nn,
             m,
             n,
+            padding,
             z_alpha,
             outlier_pixel_alpha,
             switch_impulse_only,
@@ -247,10 +251,12 @@ def Parallel_Switch_GEONLMedians(
     aswmf_weight_other=10.0,
     n_jobs=-1,
     impulse_tolerance=0,
+    padding=None,
 ):
-    m = img_n.shape[0] - 2 * f
-    n = img_n.shape[1] - 2 * f
-    filtered = img_n[f:f + m, f:f + n].copy()
+    padding = f + t if padding is None else padding
+    m = img_n.shape[0] - 2 * padding
+    n = img_n.shape[1] - 2 * padding
+    filtered = img_n[padding:padding + m, padding:padding + n].copy()
     impulse_coords = [
         (i, j)
         for i in range(m)
@@ -272,6 +278,7 @@ def Parallel_Switch_GEONLMedians(
             nn,
             m,
             n,
+            padding,
             z_alpha,
             outlier_pixel_alpha,
             False,
@@ -310,7 +317,8 @@ def run_geonlm_medians_pipeline(
     n_jobs=-1,
     impulse_tolerance=0,
 ):
-    img_noisy_mirror = mirror_cpu(img_noisy.astype(np.float32), f)
+    padding = f + t
+    img_noisy_mirror = mirror_cpu(img_noisy.astype(np.float32), padding)
     h_geonlm_medians = float(h_base) * float(mult)
 
     if switch_impulse_only:
@@ -329,6 +337,7 @@ def run_geonlm_medians_pipeline(
             aswmf_weight_other=aswmf_weight_other,
             n_jobs=n_jobs,
             impulse_tolerance=impulse_tolerance,
+            padding=padding,
         )
     else:
         img_filtered = Parallel_GEONLMedians(
@@ -347,6 +356,7 @@ def run_geonlm_medians_pipeline(
             aswmf_weight_other=aswmf_weight_other,
             n_jobs=n_jobs,
             impulse_tolerance=impulse_tolerance,
+            padding=padding,
         )
     img_filtered = np.clip(img_filtered, 0, 255).astype(np.uint8)
     img_ref = np.clip(img_original, 0, 255).astype(np.uint8)

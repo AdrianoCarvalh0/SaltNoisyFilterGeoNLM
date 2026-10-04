@@ -1,0 +1,5 @@
+tolerance,variant,variant_description,f,t,images,mean_psnr,mean_ssim,mean_score,mean_elapsed_seconds
+0,baseline_f2_t3,Article baseline support,2,3,3,32.032142564587275,0.9232307189846053,62.17760723152389,2.2207005033269525
+0,compact_f1_t3,Compact support shared with NLM-family methods,1,3,3,29.61272170201636,0.8999759019743738,59.80515594972687,0.7041484800089771
+4,baseline_f2_t3,Article baseline support,2,3,3,32.0912984100629,0.9237305770644045,62.23217805825167,1.0410456456690251
+4,compact_f1_t3,Compact support shared with NLM-family methods,1,3,3,29.745258203197057,0.9017026922106068,59.95776371212887,0.7231258253450505

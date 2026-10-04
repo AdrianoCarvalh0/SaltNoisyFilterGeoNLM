@@ -118,6 +118,7 @@ def _switch_anlm_numba(
     img_n,
     f,
     t,
+    padding,
     h,
     z_alpha,
     outlier_pixel_alpha,
@@ -128,25 +129,27 @@ def _switch_anlm_numba(
     aswmf_weight_other,
     impulse_tolerance,
 ):
-    m = img_n.shape[0] - 2 * f
-    n = img_n.shape[1] - 2 * f
-    filtered = img_n[f:f + m, f:f + n].copy()
+    m = img_n.shape[0] - 2 * padding
+    n = img_n.shape[1] - 2 * padding
+    filtered = img_n[padding:padding + m, padding:padding + n].copy()
     processed_count = 0
     fallback_count = 0
 
     for i in range(m):
         for j in range(n):
-            im = i + f
-            jn = j + f
+            im = i + padding
+            jn = j + padding
             center_value = img_n[im, jn]
             if center_value > impulse_tolerance and center_value < 255.0 - impulse_tolerance:
                 continue
             processed_count += 1
 
-            rmin = max(im - t, f)
-            rmax = min(im + t, m + f)
-            smin = max(jn - t, f)
-            smax = min(jn + t, n + f)
+            # ``img_n`` has f+t symmetric padding, so every candidate patch
+            # is in bounds and every target sees the complete (2t+1)^2 grid.
+            rmin = im - t
+            rmax = im + t + 1
+            smin = jn - t
+            smax = jn + t + 1
 
             weighted_sum = 0.0
             weight_sum = 0.0
@@ -359,10 +362,19 @@ def Parallel_Switch_ANLM(
     impulse_tolerance=0,
     return_stats=False,
 ):
+    """Switching IANLM on an unpadded image.
+
+    The public wrapper owns the f+t padding requirement.  Keeping padding
+    here prevents callers from silently supplying only f pixels of context
+    while requesting a larger search radius.
+    """
+    padding = f + t
+    img_n = mirror_cpu(np.asarray(img_n, dtype=np.float32), padding)
     filtered, processed_count, fallback_count = _switch_anlm_numba(
-        img_n.astype(np.float32),
+        img_n,
         f,
         t,
+        padding,
         h,
         z_alpha,
         outlier_pixel_alpha,
@@ -460,12 +472,14 @@ def run_anlm_pipeline(
     n_jobs=-1,
     impulse_tolerance=0,
 ):
-    img_noisy_mirror = mirror_cpu(img_noisy.astype(np.float32), f)
     h_anlm = float(h_base) * float(mult)
+    # The non-switching legacy branch retains its original execution model.
+    # The switching branch above owns f+t padding through its public wrapper.
+    img_noisy_mirror = mirror_cpu(img_noisy.astype(np.float32), f)
 
     if switch_impulse_only:
         img_filtered = Parallel_Switch_ANLM(
-            img_noisy_mirror,
+            img_noisy,
             f=f,
             t=t,
             h=h_anlm,
