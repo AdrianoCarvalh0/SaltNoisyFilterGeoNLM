@@ -1,0 +1,7 @@
+{
+  "state": "running",
+  "updated_utc": "2026-10-04T23:32:43Z",
+  "phase": "nlm_and_switching_methods",
+  "cpu_worker_limit": 8,
+  "nlm_backend": "CUDA"
+}

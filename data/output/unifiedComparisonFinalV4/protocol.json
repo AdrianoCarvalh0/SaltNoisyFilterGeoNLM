@@ -1,0 +1,195 @@
+{
+  "version": 4,
+  "seed": 42,
+  "tolerances": [
+    0,
+    4
+  ],
+  "git_revision": "1e705025db27e190acb237fdf979ca876ae51d8c",
+  "git_describe": "v4-experiment",
+  "source_tree_sha256": "a8f3b9d091c484ef112cc8a0785b49927bec5a89430d1160e0bbfa6c404a2114",
+  "dependency_lock_sha256": {
+    ".devcontainer/conda-spec-linux-64.txt": "f8e99adef8a27d62f1ba24115b2f087a4d4579f1f2b98b5e0facad465b2a059b",
+    ".devcontainer/requirements-pip.txt": "10c1e7ca6e8171e184f851a7f8aa4124f32a84e9d3bce26a5c00d944148cd802"
+  },
+  "reference_source": "data/input/<dataset>; grayscale; float32 in [0,255]",
+  "dataset_images": {
+    "set12": [
+      "01",
+      "02",
+      "03",
+      "04",
+      "05",
+      "06",
+      "07",
+      "08",
+      "09",
+      "10",
+      "11"
+    ],
+    "set50": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "10",
+      "11",
+      "12",
+      "13",
+      "14",
+      "15",
+      "16",
+      "17",
+      "18",
+      "19",
+      "20",
+      "21",
+      "22",
+      "23",
+      "24",
+      "25",
+      "26",
+      "27",
+      "28",
+      "29",
+      "30",
+      "31",
+      "32",
+      "33",
+      "34",
+      "35",
+      "36",
+      "37",
+      "38",
+      "39",
+      "40",
+      "41",
+      "42",
+      "43",
+      "44",
+      "45",
+      "46",
+      "47",
+      "48",
+      "49"
+    ]
+  },
+  "densities": {
+    "low": 0.01,
+    "moderate": 0.03,
+    "medium": 0.05,
+    "high": 0.1,
+    "extreme": 0.2
+  },
+  "methods": [
+    "nlm",
+    "ianlm",
+    "median",
+    "aswmf",
+    "nlmedians",
+    "ghnlm",
+    "gnlm"
+  ],
+  "nlm": {
+    "f": 1,
+    "t": 3,
+    "padding": "t+f",
+    "offsets_by_density": {
+      "low": [
+        -120,
+        120
+      ],
+      "moderate": [
+        10,
+        170
+      ],
+      "medium": [
+        40,
+        170
+      ],
+      "high": [
+        100,
+        280
+      ],
+      "extreme": [
+        250,
+        600
+      ]
+    },
+    "selection": "maximize 0.5*PSNR + 50*SSIM; uint8; smallest h on ties"
+  },
+  "ianlm": {
+    "f": 1,
+    "t": 3,
+    "h": 1.0,
+    "padding": "f+t",
+    "search_grid": "inclusive (2t+1)^2",
+    "switching": "input mask"
+  },
+  "ghnlm": {
+    "f": 1,
+    "t": 3,
+    "h": 1.0,
+    "k": 7,
+    "padding": "f+t",
+    "search_grid": "inclusive (2t+1)^2",
+    "source": "target coordinate"
+  },
+  "gnlm": {
+    "f": 1,
+    "t": 3,
+    "k": 7,
+    "h": "h_nlm*(1.40 if h_nlm<60 or sigma<10 else 1.55)",
+    "padding": "f+t",
+    "search_grid": "inclusive (2t+1)^2",
+    "source": "target coordinate"
+  },
+  "nlmedians": {
+    "f": 2,
+    "t": 2,
+    "h_multiplier": 0.005,
+    "selection": "Set12 medium-noise structural ablation; PSNR/runtime compromise"
+  },
+  "aswmf": {
+    "radius": 3,
+    "same_tolerance_as_ianlm": true
+  },
+  "median": {
+    "size": 3,
+    "mode": "reflect"
+  },
+  "spatial_weights": [
+    1.0,
+    1.0,
+    10.0
+  ],
+  "z_alpha": 1.96,
+  "outlier_alpha": 0.0,
+  "noise": {
+    "generator": "add_near_extreme_impulse_noise",
+    "assignment": "sample 2*ceil((density/2)*N) positions without replacement",
+    "salt_probability": "density/2",
+    "pepper_probability": "density/2",
+    "value_bands": "[0,tolerance] and [255-tolerance,255], discrete uniform",
+    "pairing": "same seed, positions, polarity, and uniform draws across tolerances"
+  },
+  "metrics": {
+    "quantization": "clip to [0,255], cast uint8",
+    "data_range": 255,
+    "psnr": "skimage.metrics.peak_signal_noise_ratio",
+    "ssim": "skimage.metrics.structural_similarity defaults; 2D grayscale",
+    "score": "0.5*PSNR + 50*SSIM"
+  },
+  "nlm_backend": "NLM_fast_cuda_global; symmetric mirror padding f+t (bounds-safe)",
+  "execution": {
+    "joblib_workers": 8,
+    "blas_threads": 1,
+    "numba_threads": 8
+  }
+}

@@ -1,0 +1,48 @@
+[
+  {
+    "started_utc": "2026-10-04T23:32:43Z",
+    "argv": [
+      "--output",
+      "data/output/unifiedComparisonFinalV4",
+      "--methods",
+      "nlm",
+      "ianlm",
+      "median",
+      "aswmf",
+      "nlmedians",
+      "ghnlm"
+    ],
+    "datasets": [
+      "set12",
+      "set50"
+    ],
+    "levels": [
+      "low",
+      "moderate",
+      "medium",
+      "high",
+      "extreme"
+    ],
+    "tolerances": [
+      0,
+      4
+    ],
+    "max_images": null,
+    "requested_methods": [
+      "nlm",
+      "ianlm",
+      "median",
+      "aswmf",
+      "nlmedians",
+      "ghnlm"
+    ],
+    "effective_methods": [
+      "nlm",
+      "ianlm",
+      "median",
+      "aswmf",
+      "nlmedians",
+      "ghnlm"
+    ]
+  }
+]

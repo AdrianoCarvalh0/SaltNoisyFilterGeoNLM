@@ -1,0 +1,18 @@
+{
+  "dataset": "set12",
+  "level": "moderate",
+  "file_name": "06",
+  "tolerance": 0,
+  "density": 0.03,
+  "shape": [
+    512,
+    512
+  ],
+  "noise_seed": 42,
+  "salt_probability": 0.015,
+  "pepper_probability": 0.015,
+  "reference_sha256": "933b93cb0dd3b983dcb68b052e1442c7d04b28739652c671986d730d95a8b12b",
+  "noisy_sha256": "4fb52e395709a9b2f3b2f3c60b4de11b54e2e6f90e2b9f7143fac052d6967d51",
+  "corruption_mask_sha256": "d6fb7e0af28df7d7aad36906ac4ee500f1d9ee640ab4454adf32f7c0c1894652",
+  "assigned_impulses": 7866
+}
