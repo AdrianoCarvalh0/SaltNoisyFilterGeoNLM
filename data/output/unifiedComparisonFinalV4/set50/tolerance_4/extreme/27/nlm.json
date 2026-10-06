@@ -1,0 +1,32 @@
+{
+  "dataset": "set50",
+  "level": "extreme",
+  "file_name": "27",
+  "tolerance": 4,
+  "density": 0.2,
+  "shape": [
+    512,
+    512
+  ],
+  "noise_seed": 42,
+  "salt_probability": 0.1,
+  "pepper_probability": 0.1,
+  "reference_sha256": "bc7a1c1300b1b1bda264e18fbde62fa845194fac5839cb705a788c6ac331f517",
+  "noisy_sha256": "5816b2bda2d0fa60b58c8bf9b52c5d0a9ee2978de739a6ec48a03a17b31d864f",
+  "corruption_mask_sha256": "836f040040fd08e6a5529832133de802b2df72cd84f784d83c4162e688d7e438",
+  "assigned_impulses": 52430,
+  "method": "nlm",
+  "h": 607,
+  "psnr": 22.847823204442797,
+  "ssim": 0.5490672113455817,
+  "score": 38.877272169500486,
+  "sigma": 43.86195672020622,
+  "h_source": "current_noise_full_reference_sweep",
+  "time_calibration_s": 11.244783392001409,
+  "f": 1,
+  "t": 3,
+  "time_filter_call_s": 0.007138139000744559,
+  "cpu_worker_limit": 8,
+  "numba_thread_limit": 8,
+  "nlm_backend": "NLM_fast_cuda_global"
+}

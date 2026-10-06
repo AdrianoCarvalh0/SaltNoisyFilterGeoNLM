@@ -1,0 +1,18 @@
+{
+  "dataset": "set50",
+  "level": "high",
+  "file_name": "49",
+  "tolerance": 4,
+  "density": 0.1,
+  "shape": [
+    512,
+    512
+  ],
+  "noise_seed": 42,
+  "salt_probability": 0.05,
+  "pepper_probability": 0.05,
+  "reference_sha256": "8311e02cd6238d6e74f6a9bf6fa5c250d748ceec5882a86242e2452c587cdf2b",
+  "noisy_sha256": "2e0d3e2dbcff7a60609d0018d609a12cf08aea695a4ed0cb6aaeb59e46fe188c",
+  "corruption_mask_sha256": "1f2a86aec46f5f5440425cf02ccd9aac25579974921856192453edfaec6cab59",
+  "assigned_impulses": 26216
+}
