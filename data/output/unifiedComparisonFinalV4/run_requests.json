@@ -122,5 +122,37 @@
       "nlm",
       "gnlm"
     ]
+  },
+  {
+    "started_utc": "2026-10-06T19:19:22Z",
+    "argv": [
+      "--output",
+      "/workspace/data/output/unifiedComparisonFinalV4",
+      "--methods",
+      "gnlm"
+    ],
+    "datasets": [
+      "set12",
+      "set50"
+    ],
+    "levels": [
+      "low",
+      "moderate",
+      "medium",
+      "high",
+      "extreme"
+    ],
+    "tolerances": [
+      0,
+      4
+    ],
+    "max_images": null,
+    "requested_methods": [
+      "gnlm"
+    ],
+    "effective_methods": [
+      "nlm",
+      "gnlm"
+    ]
   }
 ]
