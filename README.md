@@ -138,10 +138,10 @@ SaltAndPepper/
 Earlier per-level experiments, exploratory parameter studies, notebooks, plots,
 and their historical outputs live in [`legacy/`](legacy/). They are retained for
 provenance only and are not interchangeable with the canonical protocol. The
-article cites the canonical runner and the regenerated version-3 records in
-`data/output/unifiedComparisonFinalV2/`; use `unified_comparison/` for a new run.
+article cites the canonical runner and the validated version-4 records in
+`data/output/unifiedComparisonFinalV4/`; use `unified_comparison/` for a new run.
 The earlier `unifiedComparisonFinal/` archive is retained unchanged for
-provenance and must not be mixed with V2 results.
+provenance and must not be mixed with V4 results.
 
 ---
 
@@ -262,7 +262,7 @@ Your run writes everything to **`data/output/unifiedComparison/`**:
 
 ### Headline findings (mean score)
 
-- **IANLM leads GHNLM** in PSNR and SSIM in every matched V2 condition. The
+- **IANLM leads GHNLM** in PSNR and SSIM in every matched V4 condition. The
   recorded filtering-call times are configuration-specific; GHNLM is much slower.
 - **ASWMF** is the fastest overall and solid at tolerance `0`, but **collapses at
   tolerance `4`** (it depends on impulses sitting at exact 0/255).
