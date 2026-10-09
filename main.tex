@@ -738,53 +738,46 @@ IANLM fallback counters are available for every condition and satisfy processed 
 The recorded counters are descriptive only: they do not separate an empty candidate set from weight underflow, do not report GHNLM reachability, and do not isolate the contribution of robust replacement, spatial weighting, or the fallback. Accordingly, the results are interpreted as performance of the complete IANLM and GHNLM procedures, not as a component ablation or a measurement of non-local contribution.
 \pt{Os contadores registrados são apenas descritivos: eles não separam conjunto candidato vazio de underflow dos pesos, não relatam alcançabilidade do GHNLM e não isolam a contribuição da substituição robusta, da ponderação espacial ou do fallback. Consequentemente, os resultados são interpretados como desempenho dos procedimentos completos IANLM e GHNLM, e não como ablação de componentes nem medida da contribuição não local.}
 
-\section{Historical Visual Illustration (Not V4 Evidence)}
+\section{Visual Quality Assessment}
 \label{subsec:visual_quality}
 
-This section retains inherited Butterfly material solely as a historical qualitative illustration. Its images are not paired V4 outputs and are not used as evidence for a V4 method comparison, a detector-tolerance comparison, or an average visual ranking.
-\pt{Esta seção mantém o material Butterfly herdado apenas como ilustração qualitativa histórica. Suas imagens não são saídas V4 emparelhadas e não são usadas como evidência de comparação de métodos V4, comparação de tolerância do detector ou ranking visual médio.}
-
-Figure~\ref{fig:set12_reference_noisy_crop_regions} identifies the region selected for inspection in the supplied Butterfly example, labeled Set12 image 05 in the inherited material. Green rectangles mark the region in the reference and noisy images, and the corresponding enlarged crops are shown below. The supplied description assigns this example to $p=0.20$, the highest density in the stated evaluation protocol; this does not identify the noise-generation band $b$ or the detector tolerance $\tau$. The example is retained as an illustration from the supplied material, not as verified evidence for either tolerance in the revised comparison.
-\pt{A Figura~\ref{fig:set12_reference_noisy_crop_regions} identifica a região selecionada para inspeção no exemplo Butterfly fornecido, rotulado como imagem 05 do Set12 no material herdado. Retângulos verdes marcam a região nas imagens de referência e ruidosa, e os recortes ampliados correspondentes são mostrados abaixo. A descrição fornecida atribui esse exemplo a $p=0.20$, a maior densidade do protocolo de avaliação declarado; isso não identifica a faixa de geração do ruído $b$ nem a tolerância do detector $\tau$. O exemplo é mantido como ilustração do material fornecido, não como evidência verificada de qualquer uma das tolerâncias da comparação revisada.}
+Figures~\ref{fig:v4_set12_05_extreme_tau0} and \ref{fig:v4_set12_05_extreme_tau4} are paired V4 illustrations from Set12 image 05 at the fixed density $p=0.20$, shown separately for the two principal tolerances $\tau\in\{0,4\}$. Both reuse the documented historical crop coordinates $(x,y,w,h)=(295,265,150,150)$ rather than selecting a new region after observing V4 outputs. Each panel is generated directly from the reference, noisy input, and seven restored arrays in its archived case directory. The panels are illustrative only and are not used for parameter selection, a detector ablation, or an average visual ranking.
+\pt{As Figuras~\ref{fig:v4_set12_05_extreme_tau0} e \ref{fig:v4_set12_05_extreme_tau4} são ilustrações V4 emparelhadas da imagem 05 do Set12 na densidade fixa $p=0,20$, mostradas separadamente para as duas tolerâncias principais $\tau\in\{0,4\}$. Ambas reutilizam as coordenadas históricas documentadas do recorte $(x,y,w,h)=(295,265,150,150)$, em vez de selecionar uma nova região após observar as saídas V4. Cada painel é gerado diretamente da referência, da entrada ruidosa e dos sete arrays restaurados em seu diretório de caso arquivado. Os painéis são apenas ilustrativos e não são usados para seleção de parâmetros, ablação do detector ou ranking visual médio.}
 
 \begin{figure}[!t]
 \centering
-\includegraphics[width=0.45\columnwidth]{images/clean/01_reference_with_crop_rectangle.png}
-\includegraphics[width=0.45\columnwidth]{images/noisy/02_noisy_with_crop_rectangle.png}\\[1mm]
-\includegraphics[width=0.45\columnwidth]{images/cropped/butterfly/01_reference.png}
-\includegraphics[width=0.45\columnwidth]{images/cropped/butterfly/02_noisy.png}
-\caption{Supplied Butterfly example, labeled Set12 image 05. Top: reference and noisy images with the inspection region marked in green. Bottom: corresponding enlarged crops. The supplied description reports $p=0.20$; $b$, $\tau$, and execution provenance remain to be confirmed.}
-\label{fig:set12_reference_noisy_crop_regions}
-\pt{Exemplo Butterfly fornecido, rotulado como imagem 05 do Set12. Acima: imagens de referência e ruidosa com a região de inspeção marcada em verde. Abaixo: recortes ampliados correspondentes. A descrição fornecida informa $p=0.20$; $b$, $\tau$ e a proveniência da execução ainda precisam ser confirmados.}
+\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau0/reference.png}
+\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau0/noisy.png}
+\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau0/nlm.png}\\[1mm]
+\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau0/gnlm.png}
+\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau0/ghnlm.png}
+\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau0/ianlm.png}\\[1mm]
+\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau0/median.png}
+\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau0/aswmf.png}
+\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau0/nlmedians.png}
+\caption{Paired V4 crop from Set12 image 05 under salt-and-pepper noise at extreme density ($p=0.20$) and $\tau=0$, with exact endpoint bands 0 and 255. To avoid overlaid method labels, the panel order is fixed as follows: rows reference/noisy/NLM; GNLM/GHNLM/IANLM; median/ASWMF/NLMedians. The panel is generated by \path{src/salt_experiments/unified_comparison/reports/generate_v4_visual_panel.py} from \path{data/output/unifiedComparisonFinalV4/set12/tolerance_0/extreme/05/}.}
+\label{fig:v4_set12_05_extreme_tau0}
+\pt{Recorte V4 emparelhado da imagem 05 do Set12 sob ruído sal-e-pimenta em densidade extrema ($p=0,20$) e $\tau=0$, com bandas de extremos exatos 0 e 255. Para evitar rótulos sobrepostos de métodos, a ordem do painel é fixa: linhas referência/ruidosa/NLM; GNLM/GHNLM/IANLM; mediana/ASWMF/NLMedians. O painel é gerado por \path{src/salt_experiments/unified_comparison/reports/generate_v4_visual_panel.py} a partir de \path{data/output/unifiedComparisonFinalV4/set12/tolerance_0/extreme/05/}.}
 \end{figure}
-
-Figure~\ref{fig:set12_extreme_crop_visual} assembles the supplied crops for all seven method labels, including GNLM, which was absent from the earlier visual layout. Reference and noisy crops are included to facilitate local comparison. The method labels follow the supplied filenames; the images alone do not establish that the current compact parameters, calibrated smoothing values, and noise realization were used for every output. The crop coordinates, display range, and resizing procedure are not reconciled with the V4 arrays and therefore remain outside the evidentiary record of this comparison.
-\pt{A Figura~\ref{fig:set12_extreme_crop_visual} reúne os recortes fornecidos para os sete rótulos de métodos, incluindo o GNLM, ausente na organização visual anterior. Os recortes de referência e ruidoso são incluídos para facilitar a comparação local. Os rótulos dos métodos seguem os nomes dos arquivos fornecidos; as imagens, isoladamente, não comprovam que os parâmetros compactos atuais, os valores de suavização calibrados e a mesma realização de ruído foram usados para todas as saídas. As coordenadas dos recortes, a faixa de exibição e o procedimento de redimensionamento não foram reconciliados com os arrays V4 e, portanto, permanecem fora do registro de evidências desta comparação.}
 
 \begin{figure}[!t]
 \centering
-\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/01_reference.png}
-\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/02_noisy.png}
-\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/03_NLM.png}\\[1mm]
-\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/04_GNLM.png}
-\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/05_GHNLM.png}
-\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/06_IANLM.png}\\[1mm]
-\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/07_Median.png}
-\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/08_ASWMF.png}
-\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/09_NLMedian.png}
-\caption{Supplied Butterfly crops for the example described as $p=0.20$. First row: reference, noisy input, and \nlm. Second row: GNLM, GHNLM, and \method. Third row: median filtering, \aswmf, and \nlmedian. Method labels follow the supplied files; current parameter settings and tolerance are not verified.}
-\label{fig:set12_extreme_crop_visual}
-\pt{Recortes Butterfly fornecidos para o exemplo descrito como $p=0.20$. Primeira linha: referência, entrada ruidosa e \nlm. Segunda linha: GNLM, GHNLM e \method. Terceira linha: filtro de mediana, \aswmf e \nlmedian. Os rótulos dos métodos seguem os arquivos fornecidos; as configurações atuais de parâmetros e a tolerância não estão verificadas.}
+\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau4/reference.png}
+\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau4/noisy.png}
+\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau4/nlm.png}\\[1mm]
+\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau4/gnlm.png}
+\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau4/ghnlm.png}
+\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau4/ianlm.png}\\[1mm]
+\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau4/median.png}
+\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau4/aswmf.png}
+\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau4/nlmedians.png}
+\caption{Paired V4 crop from Set12 image 05 under salt-and-pepper noise at extreme density ($p=0.20$), $\tau=4$, and generation bands 0--4 and 251--255. To avoid overlaid method labels, the panel order is fixed as follows: rows reference/noisy/NLM; GNLM/GHNLM/IANLM; median/ASWMF/NLMedians. The panel is generated by \path{src/salt_experiments/unified_comparison/reports/generate_v4_visual_panel.py} from \path{data/output/unifiedComparisonFinalV4/set12/tolerance_4/extreme/05/}.}
+\label{fig:v4_set12_05_extreme_tau4}
+\pt{Recorte V4 emparelhado da imagem 05 do Set12 sob ruído sal-e-pimenta em densidade extrema ($p=0,20$), $\tau=4$ e faixas de geração 0--4 e 251--255. Para evitar rótulos sobrepostos de métodos, a ordem do painel é fixa: linhas referência/ruidosa/NLM; GNLM/GHNLM/IANLM; mediana/ASWMF/NLMedians. O painel é gerado por \path{src/salt_experiments/unified_comparison/reports/generate_v4_visual_panel.py} a partir de \path{data/output/unifiedComparisonFinalV4/set12/tolerance_4/extreme/05/}.}
 \end{figure}
 
-In these displayed crops, the NLM output exhibits softened boundaries, and residual isolated spots are visible in the median-filter output. The NLMedians-labeled crop retains conspicuous bright and dark spots, whereas the ASWMF-, GHNLM-, and IANLM-labeled crops show fewer conspicuous isolated impulses. These observations describe this supplied example only; they do not establish an average ranking or isolate the contribution of any restoration component.
-\pt{Nesses recortes exibidos, a saída do NLM apresenta contornos suavizados, e pontos isolados residuais são visíveis na saída do filtro de mediana. O recorte rotulado como NLMedians mantém pontos claros e escuros evidentes, enquanto os recortes rotulados como ASWMF, GHNLM e IANLM apresentam menos impulsos isolados evidentes. Essas observações descrevem apenas este exemplo fornecido; não estabelecem um ranking médio nem isolam a contribuição de qualquer componente de restauração.}
-
-The supplied Butterfly PNG files labeled GHNLM and IANLM have identical decoded pixel arrays, both for the full images and for the crops. Consequently, these files cannot illustrate a visual difference between the two methods. This equality concerns the exported images, not necessarily the original floating-point outputs, and is not interpreted as algorithmic agreement.
-\pt{Os arquivos PNG Butterfly fornecidos com os rótulos GHNLM e IANLM têm arrays de pixels decodificados idênticos, tanto nas imagens completas quanto nos recortes. Consequentemente, esses arquivos não podem ilustrar uma diferença visual entre os dois métodos. Essa igualdade diz respeito às imagens exportadas, não necessariamente às saídas originais em ponto flutuante, e não é interpretada como concordância entre algoritmos.}
-
-The supplied visual material is retained only as a qualitative illustration and is not used to support a numerical comparison or a claim about either detector tolerance. The identical GHNLM and IANLM Butterfly exports preclude a visual comparison between those two methods in this figure. Quantitative conclusions in this work rely exclusively on the archived per-case records.
-\pt{O material visual fornecido é mantido apenas como ilustração qualitativa e não é usado para sustentar comparação numérica nem afirmação sobre qualquer tolerância do detector. As exportações Butterfly idênticas de GHNLM e IANLM impedem uma comparação visual entre esses dois métodos nesta figura. As conclusões quantitativas deste trabalho baseiam-se exclusivamente nos registros arquivados por caso.}
+The V4 GHNLM and IANLM panels are independently restored arrays and are visibly distinct in this paired case. This does not establish a general visual or causal advantage: quantitative conclusions continue to rely on the complete archived image-level records and the paired summaries in Section~\ref{subsec:ianlm_vs_ghnlm_results}.
+\pt{Os painéis V4 de GHNLM e IANLM são arrays restaurados independentemente e são visualmente distintos neste caso emparelhado. Isso não estabelece vantagem visual ou causal geral: as conclusões quantitativas continuam a se basear nos registros completos por imagem arquivados e nos resumos emparelhados da Seção~\ref{subsec:ianlm_vs_ghnlm_results}.}
 
 
 \section{Runtime Analysis}
