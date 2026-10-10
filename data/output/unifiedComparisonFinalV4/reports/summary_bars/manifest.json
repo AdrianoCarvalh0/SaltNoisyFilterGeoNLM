@@ -1,0 +1,22 @@
+{
+  "source_archive": "data/output/unifiedComparisonFinalV4",
+  "protocol_version": 4,
+  "metrics": [
+    "psnr",
+    "ssim"
+  ],
+  "tolerances": [
+    0,
+    4
+  ],
+  "files": [
+    "reports/summary_bars/set12/graph_psnr_tau0.pdf",
+    "reports/summary_bars/set12/graph_ssim_tau0.pdf",
+    "reports/summary_bars/set12/graph_psnr_tau4.pdf",
+    "reports/summary_bars/set12/graph_ssim_tau4.pdf",
+    "reports/summary_bars/set50/graph_psnr_tau0.pdf",
+    "reports/summary_bars/set50/graph_ssim_tau0.pdf",
+    "reports/summary_bars/set50/graph_psnr_tau4.pdf",
+    "reports/summary_bars/set50/graph_ssim_tau4.pdf"
+  ]
+}

@@ -9,7 +9,7 @@ density, and crop. They are illustrative paired cases, not aggregate results.
 from pathlib import Path
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 
 
 ROOT = Path(__file__).resolve().parents[4]
@@ -30,6 +30,22 @@ def load(path: Path) -> Image.Image:
         raise ValueError(f'Invalid crop {CROP} for {path}: {crop.shape}')
     return Image.fromarray(crop.astype(np.uint8), mode='L').resize(
         (width * SCALE, height * SCALE), Image.Resampling.LANCZOS)
+
+
+def render_noisy_with_crop_rectangle(tolerance: int) -> Path:
+    """Mark the documented crop directly on the archived noisy V4 array."""
+    case = ROOT / f'data/output/unifiedComparisonFinalV4/set12/tolerance_{tolerance}/extreme/05'
+    output_dir = ROOT / f'figures/v4/set12_05_extreme_tau{tolerance}'
+    noisy = np.load(case / 'noisy.npy')
+    image = Image.fromarray(noisy.astype(np.uint8), mode='L').convert('RGB')
+    x, y, width, height = CROP
+    ImageDraw.Draw(image).rectangle(
+        (x, y, x + width - 1, y + height - 1), outline=(0, 255, 0), width=2,
+    )
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output = output_dir / 'noisy_with_crop_rectangle.png'
+    image.save(output)
+    return output
 
 
 def render_tolerance(tolerance: int) -> None:
@@ -56,6 +72,7 @@ def render_tolerance(tolerance: int) -> None:
 def main() -> None:
     for tolerance in TOLERANCES:
         render_tolerance(tolerance)
+        print(render_noisy_with_crop_rectangle(tolerance))
 
 
 if __name__ == '__main__':

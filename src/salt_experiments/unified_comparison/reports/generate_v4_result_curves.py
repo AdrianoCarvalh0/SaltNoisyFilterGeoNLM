@@ -25,10 +25,10 @@ OUTPUT = ARCHIVE / 'reports/per_image_curves'
 METHODS = (
     ('nlm', 'NLM', '#15b9d1', 's'),
     ('gnlm', 'GNLM', "#76d627", 'o'),
-    ('ghnlm', 'GHNLM', '#ff7f0e', 'D'),
+    ('ghnlm', 'GHNLM', "#420eff", 'D'),
     ('ianlm', 'IANLM', "#f70707", '*'),
     ('median', 'Median', '#9467bd', 'v'),
-    ('aswmf', 'ASWMF', '#2ca02c', '^'),
+    ('aswmf', 'ASWMF', "#999C99", '^'),
     ('nlmedians', 'NLMedians', '#111111', 'P'),
 )
 LEVEL_LABELS = {
@@ -49,13 +49,19 @@ plt.rcParams.update({
 })
 
 def set_dynamic_ssim_axis(axis: plt.Axes, values: np.ndarray,
-                          step: float = 0.03, margin_ratio: float = 0.20) -> None:
-    """Set a readable SSIM range and tick interval from the current group."""
+                          step: float = 0.03, margin_ratio: float = 0.20,
+                          top_margin: float = 0.0,
+                          upper_limit: float = 1.05) -> None:
+    """Set a readable SSIM range and tick interval from the current group.
+
+    ``top_margin`` reserves vertical room for an in-axes legend when the
+    highest curves are close to the usual SSIM ceiling.
+    """
     minimum, maximum = float(values.min()), float(values.max())
     data_range = maximum - minimum
     margin = margin_ratio * data_range if data_range > 0 else step
     ymin = max(0.0, minimum - margin)
-    ymax = min(1.05, maximum + margin)
+    ymax = min(upper_limit, maximum + max(margin, top_margin))
     axis.set_ylim(ymin, ymax)
     ticks = np.arange(
         np.floor(ymin / step) * step,
@@ -69,7 +75,7 @@ def set_dynamic_ssim_axis(axis: plt.Axes, values: np.ndarray,
 def set_dynamic_psnr_axis(axis: plt.Axes, values: np.ndarray) -> None:
     """Leave comparable breathing room while retaining useful PSNR detail."""
     minimum, maximum = float(values.min()), float(values.max())
-    axis.set_ylim(minimum - 5.0, maximum + 5.0)
+    axis.set_ylim(minimum - 5.0, maximum + 15.0)
     axis.yaxis.set_major_locator(ticker.MaxNLocator(nbins=9, min_n_ticks=7))
 
 
@@ -102,15 +108,29 @@ def plot(group: pd.DataFrame, image_names: list[str], dataset: str, level: str,
         axis.plot(x, values, label=label, color=color, marker=marker,
                   linewidth=2.5, markersize=7)
     axis.set_xlabel('Independent rank' if ordered else 'Image index')
-    axis.set_ylabel('PSNR (dB)' if metric == 'psnr' else 'SSIM')
+    axis.set_ylabel('PSNR' if metric == 'psnr' else 'SSIM')
     axis.set_xlim(1, len(image_names))
     set_dynamic_x_ticks(axis, len(image_names), figure_width)
+    needs_ssim_legend_headroom = (
+        metric == 'ssim' and level == 'extreme' and tolerance == 4
+        and dataset in {'set12', 'set50'}
+    )
     if metric == 'ssim':
-        set_dynamic_ssim_axis(axis, all_values)
+        if needs_ssim_legend_headroom:
+            # These curves reach SSIM ≈ 1, so the standard 1.05 cap leaves no
+            # empty region for the legend.  Keep the legend above the data.
+            set_dynamic_ssim_axis(
+                axis, all_values, step=0.10, top_margin=0.40, upper_limit=1.50,
+            )
+        else:
+            set_dynamic_ssim_axis(axis, all_values)
     else:
         set_dynamic_psnr_axis(axis, all_values)
     axis.grid(False)
-    axis.legend(loc='best', frameon=False, ncol=2)
+    if needs_ssim_legend_headroom:
+        axis.legend(loc='upper center', frameon=False, ncol=3)
+    else:
+        axis.legend(loc='best', frameon=False, ncol=2)
     figure.tight_layout()
     figure.savefig(destination, format='pdf', dpi=600, bbox_inches='tight')
     plt.close(figure)
