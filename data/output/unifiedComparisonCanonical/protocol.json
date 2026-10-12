@@ -6,7 +6,7 @@
     4
   ],
   "git_revision": "1e705025db27e190acb237fdf979ca876ae51d8c",
-  "git_describe": "v4-experiment",
+  "git_describe": "canonical-experiment",
   "source_tree_sha256": "a8f3b9d091c484ef112cc8a0785b49927bec5a89430d1160e0bbfa6c404a2114",
   "dependency_lock_sha256": {
     ".devcontainer/conda-spec-linux-64.txt": "f8e99adef8a27d62f1ba24115b2f087a4d4579f1f2b98b5e0facad465b2a059b",

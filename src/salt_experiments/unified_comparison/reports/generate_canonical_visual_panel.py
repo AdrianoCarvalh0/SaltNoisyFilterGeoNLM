@@ -1,7 +1,7 @@
-"""Render the individual reproducible V4 crops cited by ``main.tex``.
+"""Render the individual reproducible canonical crops cited by ``main.tex``.
 
 The crops deliberately reuse the documented historical Butterfly coordinates,
-but obtain every displayed array from the validated V4 archive. Separate output
+but obtain every displayed array from the validated canonical archive. Separate output
 directories retain the two principal detector tolerances for the same image,
 density, and crop. They are illustrative paired cases, not aggregate results.
 """
@@ -33,9 +33,9 @@ def load(path: Path) -> Image.Image:
 
 
 def render_noisy_with_crop_rectangle(tolerance: int) -> Path:
-    """Mark the documented crop directly on the archived noisy V4 array."""
-    case = ROOT / f'data/output/unifiedComparisonFinalV4/set12/tolerance_{tolerance}/extreme/05'
-    output_dir = ROOT / f'figures/v4/set12_05_extreme_tau{tolerance}'
+    """Mark the documented crop directly on the archived noisy array."""
+    case = ROOT / f'data/output/unifiedComparisonCanonical/set12/tolerance_{tolerance}/extreme/05'
+    output_dir = ROOT / f'figures/canonical/set12_05_extreme_tau{tolerance}'
     noisy = np.load(case / 'noisy.npy')
     image = Image.fromarray(noisy.astype(np.uint8), mode='L').convert('RGB')
     x, y, width, height = CROP
@@ -49,8 +49,8 @@ def render_noisy_with_crop_rectangle(tolerance: int) -> Path:
 
 
 def render_tolerance(tolerance: int) -> None:
-    case = ROOT / f'data/output/unifiedComparisonFinalV4/set12/tolerance_{tolerance}/extreme/05'
-    output_dir = ROOT / f'figures/v4/set12_05_extreme_tau{tolerance}'
+    case = ROOT / f'data/output/unifiedComparisonCanonical/set12/tolerance_{tolerance}/extreme/05'
+    output_dir = ROOT / f'figures/canonical/set12_05_extreme_tau{tolerance}'
     panels = (
         ('reference.png', ROOT / 'data/input/set12/05.png'),
         ('noisy.png', case / 'noisy.npy'),

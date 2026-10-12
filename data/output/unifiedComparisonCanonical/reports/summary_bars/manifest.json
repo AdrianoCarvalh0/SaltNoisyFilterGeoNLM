@@ -1,5 +1,5 @@
 {
-  "source_archive": "data/output/unifiedComparisonFinalV4",
+  "source_archive": "data/output/unifiedComparisonCanonical",
   "protocol_version": 4,
   "metrics": [
     "psnr",

@@ -1,4 +1,4 @@
-"""Generate per-image V4 PSNR and SSIM curves as vector PDFs.
+"""Generate canonical per-image PSNR and SSIM curves as vector PDFs.
 
 For every dataset, salt-and-pepper density, and principal tolerance, this
 script writes an ``unordered`` curve in the protocol image order and an
@@ -20,7 +20,7 @@ import pandas as pd
 
 
 ROOT = Path(__file__).resolve().parents[4]
-ARCHIVE = ROOT / 'data/output/unifiedComparisonFinalV4'
+ARCHIVE = ROOT / 'data/output/unifiedComparisonCanonical'
 OUTPUT = ARCHIVE / 'reports/per_image_curves'
 METHODS = (
     ('nlm', 'NLM', '#15b9d1', 's'),
@@ -143,7 +143,7 @@ def main() -> None:
                 * len(protocol['densities']) * len(protocol['tolerances'])
                 * len(protocol['methods']))
     if len(data) != expected:
-        raise ValueError(f'Expected {expected} V4 records, found {len(data)}')
+        raise ValueError(f'Expected {expected} canonical records, found {len(data)}')
     written = []
     for dataset, image_names in protocol['dataset_images'].items():
         image_names = [str(name) for name in image_names]

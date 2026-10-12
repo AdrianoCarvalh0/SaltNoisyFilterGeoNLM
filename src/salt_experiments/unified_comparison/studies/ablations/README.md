@@ -14,7 +14,7 @@ Each result directory contains a `protocol.json`, complete calibration curves,
 per-configuration `results.csv`, and `summary.csv`, but no restored images or
 arrays. This keeps studies reproducible without duplicating the final archive.
 
-The NLMedians full study selects `(f,t)=(2,2)` as the fixed V4 baseline by the
+The NLMedians full study selects `(f,t)=(2,2)` as the fixed canonical baseline by the
 PSNR/runtime compromise: `(2,2)` dominates the previous `(2,3)` setting in the
 tested Set12-medium conditions. The alternative `(3,2)` has higher mean SSIM
 and auxiliary score, so the study does not claim a universal optimum.

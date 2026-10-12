@@ -65,8 +65,9 @@ Salt-and-pepper noise is a widely used model for impulsive image degradation~\ci
 Conventional smoothing can suppress image details along with noise, whereas adaptive median filters seek to balance impulse removal and detail preservation~\cite{hwang1995adaptive}. Switching filters explicitly separate detection from restoration and restrict filtering to pixels classified as corrupted~\cite{wang1999progressive,zhang2002new}. This selective processing preserves pixels classified as reliable, although its effectiveness depends on the accuracy of the impulse detector~\cite{zhang2002new}.
 \pt{A suavização convencional pode suprimir detalhes da imagem junto com o ruído, enquanto filtros de mediana adaptativa procuram equilibrar remoção de impulsos e preservação de detalhes~\cite{hwang1995adaptive}. Filtros com chaveamento separam explicitamente detecção e restauração e restringem a filtragem aos pixels classificados como corrompidos~\cite{wang1999progressive,zhang2002new}. Esse processamento seletivo preserva pixels classificados como confiáveis, embora sua eficácia dependa da precisão do detector de impulsos~\cite{zhang2002new}.}
 
-The development of salt-and-pepper denoising methods has therefore been strongly influenced by nonlinear, median-based, and decision-based strategies. Adaptive median filters use variable-size windows to remove impulse pixels while attempting to preserve sharp structures~\cite{hwang1995adaptive}. Progressive switching median filters used an explicit detection-before-filtering strategy and applied detection and restoration progressively over multiple iterations~\cite{wang1999progressive}. Dedicated impulse detectors and fast decision-based algorithms further reinforced the importance of identifying corrupted pixels before restoration, especially under high-density impulse noise~\cite{zhang2002new,srinivasan2007new}. Decision-based and trimmed-median filters also improved robustness by discarding extreme-valued candidates before computing the replacement value~\cite{esakkirajan2011removal}. These methods established the importance of three principles that are also central to this work: impulse detection, candidate rejection, and selective restoration.
-\pt{O desenvolvimento de métodos para remoção de ruído sal-e-pimenta foi, portanto, fortemente influenciado por estratégias não lineares, baseadas em mediana e baseadas em decisão. Filtros de mediana adaptativa usam janelas de tamanho variável para remover pixels impulsivos enquanto tentam preservar estruturas nítidas~\cite{hwang1995adaptive}. Filtros de mediana com chaveamento progressivo utilizaram uma estratégia explícita de detecção antes da filtragem e aplicaram detecção e restauração progressivamente ao longo de múltiplas iterações~\cite{wang1999progressive}. Detectores de impulsos dedicados e algoritmos rápidos baseados em decisão reforçaram ainda mais a importância de identificar pixels corrompidos antes da restauração, especialmente sob ruído impulsivo de alta densidade~\cite{zhang2002new,srinivasan2007new}. Filtros baseados em decisão e em mediana aparada também melhoraram a robustez ao descartar candidatos com valores extremos antes de calcular o valor de substituição~\cite{esakkirajan2011removal}. Esses métodos estabeleceram a importância de três princípios que também são centrais neste trabalho: detecção de impulsos, rejeição de candidatos e restauração seletiva.}
+The development of salt-and-pepper denoising methods has been shaped by nonlinear, median-based, and decision-based strategies. Adaptive median filters employ variable-size windows to suppress impulse noise while aiming to preserve image details~\cite{hwang1995adaptive}. Progressive switching median filters combine iterative impulse detection with selective restoration, progressively identifying and correcting corrupted pixels~\cite{wang1999progressive}. Dedicated impulse detectors and fast decision-based algorithms emphasize the importance of identifying corrupted pixels before reconstruction, particularly at high noise densities~\cite{zhang2002new,srinivasan2007new}. Decision-based and trimmed-median filters further improve robustness by excluding extreme-valued candidates from the computation of replacement values~\cite{esakkirajan2011removal}. Collectively, these approaches highlight three fundamental principles that also guide the proposed method: impulse detection, candidate rejection, and selective restoration.
+
+\pt{O desenvolvimento de métodos para remoção de ruído sal-e-pimenta tem sido orientado por estratégias não lineares, baseadas em mediana e baseadas em decisão. Filtros de mediana adaptativa empregam janelas de tamanho variável para suprimir ruído impulsivo, buscando preservar os detalhes da imagem~\cite{hwang1995adaptive}. Filtros de mediana com chaveamento progressivo combinam detecção iterativa de impulsos com restauração seletiva, identificando e corrigindo progressivamente pixels corrompidos~\cite{wang1999progressive}. Detectores de impulsos específicos e algoritmos rápidos baseados em decisão enfatizam a importância de identificar pixels corrompidos antes da reconstrução, particularmente em densidades elevadas de ruído~\cite{zhang2002new,srinivasan2007new}. Filtros baseados em decisão e em mediana aparada melhoram ainda mais a robustez ao excluir candidatos com valores extremos do cálculo dos valores de substituição~\cite{esakkirajan2011removal}. Em conjunto, essas abordagens destacam três princípios fundamentais que também orientam o método proposto: detecção de impulsos, rejeição de candidatos e restauração seletiva.}
 
 
 Non-Local Means (\nlm) exploits self-similarity in images by averaging pixels whose surrounding patches are similar~\cite{buades2005nlm,buades2005review}. This patch-based formulation was evaluated for additive Gaussian noise and can preserve textures and repeated structures~\cite{buades2005nlm}. In its classical form, both patch distances and the weighted average are computed from the observed image~\cite{buades2005nlm}. Consequently, applying that formulation directly to an impulse-corrupted image allows extreme-valued observations to enter both computations. This motivates our use of explicit impulse detection and candidate rejection, drawing on switching and trimmed-sample restoration strategies~\cite{wang1999progressive,esakkirajan2011removal}.
@@ -185,8 +186,8 @@ x(i), & \text{with probability }1-p.
 \end{cases}
 \label{eq:band_noise_model}
 \end{equation}
-The draft describes uniform integer draws within each band. This distribution and the mechanism for selecting positions must be verified in the generator. A fixed number of sampled positions is not an independent Bernoulli mask, even if the nominal density is the same. An assigned impulse can equal the clean intensity, so assignment and actual intensity change must also be distinguished.
-\pt{O rascunho descreve sorteios uniformes inteiros dentro de cada faixa. Essa distribuição e o mecanismo de seleção das posições precisam ser verificados no gerador. Um número fixo de posições amostradas não constitui uma máscara Bernoulli independente, mesmo com a mesma densidade nominal. Um impulso atribuído pode ser igual à intensidade limpa, portanto também é necessário distinguir atribuição de alteração efetiva da intensidade.}
+In the evaluated protocol, impulse intensities are drawn uniformly as integers within their respective bands, and disjoint salt and pepper locations are selected with a fixed assignment count for each type. Consequently, this design is not an independent Bernoulli mask, even when the nominal density is identical. An assigned impulse can also equal the original clean intensity; impulse assignment and actual intensity change must therefore be distinguished.
+\pt{No protocolo avaliado, as intensidades impulsivas são sorteadas uniformemente como inteiros dentro das respectivas faixas, e as posições de sal e pimenta são disjuntas, com quantidade fixa de atribuições para cada tipo. Consequentemente, esse desenho não constitui uma máscara Bernoulli independente, mesmo quando a densidade nominal é idêntica. Um impulso atribuído também pode coincidir com a intensidade limpa original; portanto, é necessário distinguir a atribuição do impulso da alteração efetiva da intensidade.}
 
 
 \subsection{Switching and Candidate Rejection in ASWMF}
@@ -249,21 +250,21 @@ In the declared protocol, $\tau$ denotes the tolerance in $[0,255]$ intensity un
 \pt{No protocolo declarado, $\tau$ denota a tolerância em unidades de intensidade de $[0,255]$, de modo que $\delta=\tau$ nessa representação e $\rho=\tau/255$. Assim, $\tau=4$ corresponde a $4/255\approx0.015686$ para intensidades normalizadas, e não a uma tolerância de 4 em $[0,1]$. A Tabela~\ref{tab:range_tolerance} resume essas representações equivalentes.}
 
 \begin{table}[t]
-\centering
-\caption{Equivalent detection bands for the experimental tolerance $\tau=4$.}
-\label{tab:range_tolerance}
-\small
-\setlength{\tabcolsep}{3pt}
-\begin{tabular}{lll}
-\toprule
-Representation & Range & Detected bands \\
-\midrule
-\texttt{uint8} & $[0,255]$ & $[0,4]\cup[251,255]$ \\
-Float, unscaled & $[0,255]$ & $[0,4]\cup[251,255]$ \\
-Float, normalized & $[0,1]$ & $[0,4/255]\cup[251/255,1]$ \\
-\bottomrule
-\end{tabular}
-\pt{Faixas de detecção equivalentes para a tolerância experimental $\tau=4$. Um array de ponto flutuante sem reescala utiliza as mesmas faixas do array \texttt{uint8}; um array normalizado exige a conversão dos limiares.}
+  \centering
+  \caption{Equivalent detection bands for the experimental tolerance $\tau=4$.}
+  \label{tab:range_tolerance}
+  \small
+  \setlength{\tabcolsep}{3pt}
+  \begin{tabular}{lll}
+  \toprule
+  Representation & Range & Detected bands \\
+  \midrule
+  \texttt{uint8} & $[0,255]$ & $[0,4]\cup[251,255]$ \\
+  Float, unscaled & $[0,255]$ & $[0,4]\cup[251,255]$ \\
+  Float, normalized & $[0,1]$ & $[0,4/255]\cup[251/255,1]$ \\
+  \bottomrule
+  \end{tabular}
+  \pt{Faixas de detecção equivalentes para a tolerância experimental $\tau=4$. Um array de ponto flutuante sem reescala utiliza as mesmas faixas do array \texttt{uint8}; um array normalizado exige a conversão dos limiares.}
 \end{table}
 
 The smoothing parameter must also be rescaled. For the Euclidean patch weight $\exp(-\lVert y(\eta_i)-y(\eta_j)\rVert_2^2/h_y^2)$, equivalent weights in normalized coordinates require
@@ -349,8 +350,8 @@ The main strength of \nlm is its ability to exploit redundancy and self-similari
 For the direct formula above, $h>0$ and the squared patch distance is written as a sum, not a mean. We use $f$ for patch radius and $t$ for search radius, giving nominal sizes $(2f+1)^2$ and $(2t+1)^2$ away from boundaries. Thus, compact NLM with $f=1,t=3$ uses $3\times3$ patches within a nominal $7\times7$ search region. Matching these sizes does not make standard NLM impulse-aware: it still filters every target and does not apply $M_\tau$.
 \pt{Na fórmula direta acima, $h>0$ e a distância quadrática entre patches é escrita como soma, não como média. Usamos $f$ para o raio do patch e $t$ para o raio de busca, fornecendo tamanhos nominais $(2f+1)^2$ e $(2t+1)^2$ longe das bordas. Assim, o NLM compacto com $f=1,t=3$ usa patches $3\times3$ em uma região nominal de busca $7\times7$. Igualar esses tamanhos não torna o NLM padrão orientado a impulsos: ele continua filtrando todos os alvos e não aplica $M_\tau$.}
 
-The V4 records identify the CUDA global-memory backend. The canonical kernel uses symmetric mirror padding of radius $f+t$, which covers both the search displacement and candidate-patch extent. A regression test compares the CUDA result with a direct CPU calculation at image boundaries. The reported comparison does not claim bitwise CPU--CUDA equality beyond this tested configuration.
-\pt{Os registros V4 identificam o backend CUDA de memória global. O kernel canônico usa padding espelhado simétrico de raio $f+t$, que cobre tanto o deslocamento de busca quanto a extensão do patch candidato. Um teste de regressão compara o resultado CUDA com um cálculo CPU direto nas bordas da imagem. A comparação reportada não reivindica igualdade bit a bit CPU--CUDA além dessa configuração testada.}
+The experimental records identify the CUDA global-memory backend. The canonical kernel uses symmetric mirror padding of radius $f+t$, which covers both the search displacement and candidate-patch extent. A regression test compares the CUDA result with a direct CPU calculation at image boundaries. The reported comparison does not claim bitwise CPU--CUDA equality beyond this tested configuration.
+\pt{Os registros experimentais identificam o backend CUDA de memória global. O kernel canônico usa padding espelhado simétrico de raio $f+t$, que cobre tanto o deslocamento de busca quanto a extensão do patch candidato. Um teste de regressão compara o resultado CUDA com um cálculo CPU direto nas bordas da imagem. A comparação reportada não reivindica igualdade bit a bit CPU--CUDA além dessa configuração testada.}
 
 
 \section{The Proposed Impulse-Aware Non-Local Means Framework}
@@ -484,8 +485,8 @@ For fixed patch size, search size, connectivity, and bounded local operators, bo
 \subsection{Public Implementation and Reproduction Environment}
 \label{subsec:reproducibility}
 
-The implementation and experimental materials are publicly available in the authors' \textit{SaltNoisyFilterGeoNLM} repository~\cite{carvalho2026saltcode}. The updated README provides container setup instructions, execution commands, parameter-selection rules, and the locations of input data, outputs, reports, and plots. It identifies \path{src/salt_experiments/unified_comparison/} as the canonical experiment and \path{data/output/unifiedComparisonFinalV4/} as the validated archive of final results. Earlier per-level scripts, hybrid runs, and parameter studies are retained as legacy or exploratory material, not interchangeable implementations of the final comparison.
-\pt{A implementação e os materiais experimentais estão disponíveis publicamente no repositório \textit{SaltNoisyFilterGeoNLM} dos autores~\cite{carvalho2026saltcode}. O README atualizado fornece instruções de configuração do contêiner, comandos de execução, regras de seleção de parâmetros e as localizações dos dados de entrada, saídas, relatórios e gráficos. Ele identifica \path{src/salt_experiments/unified_comparison/} como o experimento canônico e \path{data/output/unifiedComparisonFinalV4/} como o arquivo validado dos resultados finais. Scripts anteriores por nível, execuções híbridas e estudos de parâmetros são mantidos como material legado ou exploratório, não como implementações intercambiáveis da comparação final.}
+The implementation and experimental materials are publicly available in the authors' \textit{SaltNoisyFilterGeoNLM} repository~\cite{carvalho2026saltcode}. The updated README provides container setup instructions, execution commands, parameter-selection rules, and the locations of input data, outputs, reports, and plots. It identifies \path{src/salt_experiments/unified_comparison/} as the canonical experiment and \path{data/output/unifiedComparisonCanonical/} as the validated archive of final results. Earlier per-level scripts, hybrid runs, and parameter studies are retained as legacy or exploratory material, not interchangeable implementations of the final comparison.
+\pt{A implementação e os materiais experimentais estão disponíveis publicamente no repositório \textit{SaltNoisyFilterGeoNLM} dos autores~\cite{carvalho2026saltcode}. O README atualizado fornece instruções de configuração do contêiner, comandos de execução, regras de seleção de parâmetros e as localizações dos dados de entrada, saídas, relatórios e gráficos. Ele identifica \path{src/salt_experiments/unified_comparison/} como o experimento canônico e \path{data/output/unifiedComparisonCanonical/} como o arquivo validado dos resultados finais. Scripts anteriores por nível, execuções híbridas e estudos de parâmetros são mantidos como material legado ou exploratório, não como implementações intercambiáveis da comparação final.}
 
 The Dev Container builds a Docker environment using an explicit Conda lockfile, \path{.devcontainer/conda-spec-linux-64.txt}, and the pip-only dependency specification \path{.devcontainer/requirements-pip.txt}. The documented build restores the explicit Conda package specification without dependency solving. The RAPIDS/CUDA 12.2 configuration supports the CUDA NLM backend; a compatible NVIDIA GPU, host driver, and container GPU support remain host requirements. The README documents both VS Code Dev Containers and Docker CLI execution, including WSL2 setup on Windows. These specifications support environment reconstruction, but do not make execution times independent of hardware.
 \pt{O Dev Container constrói um ambiente Docker usando um lockfile explícito Conda, \path{.devcontainer/conda-spec-linux-64.txt}, e a especificação de dependências exclusivas de pip \path{.devcontainer/requirements-pip.txt}. A construção documentada restaura a especificação explícita de pacotes Conda sem resolução de dependências. A configuração RAPIDS/CUDA 12.2 suporta o backend NLM CUDA; GPU NVIDIA compatível, driver do hospedeiro e suporte à GPU no contêiner permanecem requisitos do hospedeiro. O README documenta tanto a execução por VS Code Dev Containers quanto por Docker CLI, incluindo configuração WSL2 no Windows. Essas especificações permitem reconstruir o ambiente, mas não tornam os tempos independentes do hardware.}
@@ -493,8 +494,8 @@ The Dev Container builds a Docker environment using an explicit Conda lockfile, 
 The canonical entry point is \path{src/salt_experiments/unified_comparison/run.py}, with \texttt{run\_sequence.py} providing two-phase orchestration. According to the documented workflow, completed per-method JSON records act as completion markers, allowing interrupted runs to resume without recomputing completed cases. A stored \texttt{protocol.json} guards against mixing incompatible protocols, and per-case SHA-256 identities check the reference and noisy inputs. The summaries are regenerated from completed records. Reopening a completed archive therefore checks or refreshes its summaries; independent numerical reproduction requires a fresh output directory rather than simply reusing completion markers.
 \pt{O ponto de entrada canônico é \path{src/salt_experiments/unified_comparison/run.py}, com \texttt{run\_sequence.py} fornecendo orquestração em duas fases. Conforme o fluxo documentado, registros JSON concluídos por método funcionam como marcadores de conclusão, permitindo retomar execuções interrompidas sem recalcular os casos concluídos. Um \texttt{protocol.json} armazenado impede misturar protocolos incompatíveis, e identidades SHA-256 por caso conferem as entradas de referência e ruidosa. Os resumos são regenerados a partir dos registros concluídos. Reabrir um arquivo de resultados concluído, portanto, confere ou atualiza seus resumos; a reprodução numérica independente exige um novo diretório de saída, em vez de simplesmente reutilizar marcadores de conclusão.}
 
-The final archive documents the version-4 protocol, code and dependency hashes, runtime and invocation manifests, per-case input identities, noisy arrays, corruption masks, detector records, restored \texttt{uint8} arrays, method parameters and metrics, and image-wise \texttt{nlm\_h\_sweep.csv} calibration curves. The aggregate files \texttt{results\_partial.csv} and \texttt{summary\_partial.csv} summarize those records. The canonical runner obtains its clean reference arrays directly from \path{data/input/}; NLM is calibrated on the current noisy observation. The README identifies the final Set12 collection as 11 images after removing Lena, consistent with the recorded group sizes.
-\pt{O arquivo final documenta o protocolo de versão 4, hashes do código e das dependências, manifestos de execução e invocação, identidades de entrada por caso, arrays ruidosos, máscaras de corrupção, registros do detector, arrays restaurados \texttt{uint8}, parâmetros e métricas dos métodos e curvas de calibração por imagem \texttt{nlm\_h\_sweep.csv}. Os arquivos agregados \texttt{results\_partial.csv} e \texttt{summary\_partial.csv} resumem esses registros. O executor canônico obtém seus arrays de referência limpa diretamente de \path{data/input/}; o NLM é calibrado na observação ruidosa atual. O README identifica a coleção final Set12 como 11 imagens após remover Lena, consistente com os tamanhos dos grupos registrados.}
+The final archive documents the experimental protocol, code and dependency hashes, runtime and invocation manifests, per-case input identities, noisy arrays, corruption masks, detector records, restored \texttt{uint8} arrays, method parameters and metrics, and image-wise \texttt{nlm\_h\_sweep.csv} calibration curves. The aggregate files \texttt{results\_partial.csv} and \texttt{summary\_partial.csv} summarize those records. The canonical runner obtains its clean reference arrays directly from \path{data/input/}; NLM is calibrated on the current noisy observation. The README identifies the final Set12 collection as 11 images after removing Lena, consistent with the recorded group sizes.
+\pt{O arquivo final documenta o protocolo experimental, hashes do código e das dependências, manifestos de execução e invocação, identidades de entrada por caso, arrays ruidosos, máscaras de corrupção, registros do detector, arrays restaurados \texttt{uint8}, parâmetros e métricas dos métodos e curvas de calibração por imagem \texttt{nlm\_h\_sweep.csv}. Os arquivos agregados \texttt{results\_partial.csv} e \texttt{summary\_partial.csv} resumem esses registros. O executor canônico obtém seus arrays de referência limpa diretamente de \path{data/input/}; o NLM é calibrado na observação ruidosa atual. O README identifica a coleção final Set12 como 11 imagens após remover Lena, consistente com os tamanhos dos grupos registrados.}
 
 Parallel execution and CUDA acceleration make the repeated baseline computations more practical. NLM calibration evaluates multiple candidate values of $h$ and selects the largest observed score, $0.5\operatorname{PSNR}+50\operatorname{SSIM}$, within the specified search grid. The selected $h_{\mathrm{NLM}}$ then determines $h_{\mathrm{GNLM}}$ through the stated scaling rule; reproducing GNLM therefore also requires reproducing the NLM calibration. This is a full-reference benchmark procedure, not a claim of a global optimum or reference-free parameter selection. IANLM and GHNLM retain fixed $h=1$ and do not require this image-wise NLM search during restoration. The reported CUDA backend refers to NLM; parallel execution does not imply that every method uses the GPU.
 \pt{A execução paralela e a aceleração CUDA tornam mais práticas as computações repetidas dos baselines. A calibração NLM avalia múltiplos valores candidatos de $h$ e seleciona o maior score observado, $0.5\operatorname{PSNR}+50\operatorname{SSIM}$, dentro da grade de busca especificada. O $h_{\mathrm{NLM}}$ selecionado determina então $h_{\mathrm{GNLM}}$ pela regra de escala apresentada; reproduzir o GNLM, portanto, também exige reproduzir a calibração NLM. Esse é um procedimento de benchmark com referência completa, não uma afirmação de ótimo global ou seleção de parâmetros sem referência. IANLM e GHNLM mantêm $h=1$ fixo e não exigem essa busca NLM por imagem durante a restauração. O backend CUDA informado refere-se ao NLM; execução paralela não implica que todos os métodos usem a GPU.}
@@ -502,17 +503,17 @@ Parallel execution and CUDA acceleration make the repeated baseline computations
 Reproduction of the numerical results requires the same code revision, input arrays, noise realization, calibration grid, parameter rules, and metric conventions as the archived experiment. The saved outputs provide comparison targets for checking PSNR, SSIM, and score at the precision reported here. Access to source code and a container supports reproducibility, but does not itself constitute an independent rerun or establish bitwise equality across different numerical backends. Runtime reproduction requires the additional timing controls discussed in Section~\ref{sec:runtime}.
 \pt{A reprodução dos resultados numéricos exige a mesma revisão do código, arrays de entrada, realização do ruído, grade de calibração, regras de parâmetros e convenções de métricas do experimento arquivado. As saídas salvas fornecem alvos de comparação para conferir PSNR, SSIM e score na precisão apresentada aqui. O acesso ao código-fonte e a um contêiner favorece a reprodutibilidade, mas não constitui, por si só, uma reexecução independente nem estabelece igualdade bit a bit entre diferentes backends numéricos. A reprodução dos tempos exige os controles adicionais discutidos na Seção~\ref{sec:runtime}.}
 
-The final archive is \path{data/output/unifiedComparisonFinalV4/}; new executions must use an explicit, separate output directory. Its version-4 \texttt{protocol.json} specifies the protocol associated with the official CSVs. The canonical runner now reads the reference images directly from \path{data/input/}, so no legacy reference pickle is required.
-\pt{O arquivo final é \path{data/output/unifiedComparisonFinalV4/}; novas execuções devem usar um diretório de saída explícito e separado. Seu \texttt{protocol.json} de versão 4 especifica o protocolo associado aos CSVs oficiais. O executor canônico agora lê as imagens de referência diretamente de \path{data/input/}, de modo que nenhum pickle legado de referência é necessário.}
+The final archive is \path{data/output/unifiedComparisonCanonical/}; new executions must use an explicit, separate output directory. Its \texttt{protocol.json} specifies the protocol associated with the official CSVs. The canonical runner now reads the reference images directly from \path{data/input/}, so no legacy reference pickle is required.
+\pt{O arquivo final é \path{data/output/unifiedComparisonCanonical/}; novas execuções devem usar um diretório de saída explícito e separado. Seu \texttt{protocol.json} especifica o protocolo associado aos CSVs oficiais. O executor canônico agora lê as imagens de referência diretamente de \path{data/input/}, de modo que nenhum pickle legado de referência é necessário.}
 
 \subsection{Image Collections, Noise, and Execution Coverage}
 \label{subsec:data_noise}
 
-The revised protocol reported by the authors uses 61 grayscale image entries from Set12 and Set50, five nominal densities $p\in\{0.01,0.03,0.05,0.10,0.20\}$, and matched settings $b=\tau\in\{0,4\}$. The draft identifies 11 Set12 images after excluding Lena and 50 Set50 images. This composition gives $61\times5\times2=610$ image--density--band conditions: 110 for Set12 and 500 for Set50, or 305 at each tolerance. The official records contain all seven method outputs for each condition, yielding 4,270 rows. Reference hashes identify 60 distinct references: Set12 entry \texttt{01.png} and Set50 entry \texttt{0.png} share the same hash. The 610 conditions retain the declared dataset membership but do not represent 61 distinct image contents.
-\pt{O protocolo revisado informado pelos autores usa 61 entradas de imagens em tons de cinza do Set12 e Set50, cinco densidades nominais $p\in\{0.01,0.03,0.05,0.10,0.20\}$ e configurações correspondentes $b=\tau\in\{0,4\}$. O rascunho identifica 11 imagens do Set12 após excluir Lena e 50 imagens do Set50. Essa composição fornece $61\times5\times2=610$ condições de imagem, densidade e faixa: 110 no Set12 e 500 no Set50, ou 305 em cada tolerância. Os registros oficiais contêm as saídas dos sete métodos para cada condição, totalizando 4.270 linhas. Os hashes das referências identificam 60 referências distintas: a entrada \texttt{01.png} do Set12 e a entrada \texttt{0.png} do Set50 compartilham o mesmo hash. As 610 condições preservam a composição declarada dos conjuntos, mas não representam 61 conteúdos de imagem distintos.}
+The revised protocol reported by the authors uses 61 grayscale image entries from Set12 and Set50, five nominal densities $p\in\{0.01,0.03,0.05,0.10,0.20\}$, and matched settings $b=\tau\in\{0,4\}$. The protocol includes 11 Set12 images after excluding Lena and 50 Set50 images. This composition gives $61\times5\times2=610$ image--density--band conditions: 110 for Set12 and 500 for Set50, or 305 at each tolerance. The official records contain all seven method outputs for each condition, yielding 4,270 rows. Reference hashes identify 60 distinct references: Set12 entry \texttt{01.png} and Set50 entry \texttt{0.png} share the same hash. The 610 conditions retain the declared dataset membership but do not represent 61 distinct image contents.
+\pt{O protocolo revisado informado pelos autores usa 61 entradas de imagens em tons de cinza do Set12 e Set50, cinco densidades nominais $p\in\{0.01,0.03,0.05,0.10,0.20\}$ e configurações correspondentes $b=\tau\in\{0,4\}$. O protocolo inclui 11 imagens do Set12 após excluir Lena e 50 imagens do Set50. Essa composição fornece $61\times5\times2=610$ condições de imagem, densidade e faixa: 110 no Set12 e 500 no Set50, ou 305 em cada tolerância. Os registros oficiais contêm as saídas dos sete métodos para cada condição, totalizando 4.270 linhas. Os hashes das referências identificam 60 referências distintas: a entrada \texttt{01.png} do Set12 e a entrada \texttt{0.png} do Set50 compartilham o mesmo hash. As 610 condições preservam a composição declarada dos conjuntos, mas não representam 61 conteúdos de imagem distintos.}
 
-All methods within a condition receive the same noisy observation and reference, on the declared $[0,255]$ scale. The V4 archive records $512\times512$ reference arrays, seed 42, disjoint salt and pepper locations, $\lceil pN/2\rceil$ assignments of each type, and uniform integer band values. Its case records confirm the declared dimensions and identical reference/noisy hashes across the seven methods within each condition. The validated corruption-mask hashes additionally confirm identical assignment masks for the paired $\tau=0$ and $\tau=4$ cases of every dataset entry and density; the realized impulse values differ because their generation bands differ.
-\pt{Todos os métodos dentro de uma condição recebem a mesma observação ruidosa e referência, na escala declarada $[0,255]$. O arquivo V4 registra arrays de referência $512\times512$, semente 42, posições de sal e pimenta disjuntas, $\lceil pN/2\rceil$ atribuições de cada tipo e valores inteiros uniformes nas faixas. Seus registros por caso confirmam as dimensões declaradas e hashes de referência/imagem ruidosa idênticos entre os sete métodos em cada condição. Os hashes validados das máscaras de corrupção confirmam adicionalmente máscaras de atribuição idênticas para os casos emparelhados $\tau=0$ e $\tau=4$ de cada entrada do conjunto e densidade; os valores de impulso realizados diferem porque suas faixas de geração diferem.}
+All methods within a condition receive the same noisy observation and reference, on the declared $[0,255]$ scale. The final archive records $512\times512$ reference arrays, seed 42, disjoint salt and pepper locations, $\lceil pN/2\rceil$ assignments of each type, and uniform integer band values. Its case records confirm the declared dimensions and identical reference/noisy hashes across the seven methods within each condition. The validated corruption-mask hashes additionally confirm identical assignment masks for the paired $\tau=0$ and $\tau=4$ cases of every dataset entry and density; the realized impulse values differ because their generation bands differ.
+\pt{Todos os métodos dentro de uma condição recebem a mesma observação ruidosa e referência, na escala declarada $[0,255]$. O arquivo final registra arrays de referência $512\times512$, semente 42, posições de sal e pimenta disjuntas, $\lceil pN/2\rceil$ atribuições de cada tipo e valores inteiros uniformes nas faixas. Seus registros por caso confirmam as dimensões declaradas e hashes de referência/imagem ruidosa idênticos entre os sete métodos em cada condição. Os hashes validados das máscaras de corrupção confirmam adicionalmente máscaras de atribuição idênticas para os casos emparelhados $\tau=0$ e $\tau=4$ de cada entrada do conjunto e densidade; os valores de impulso realizados diferem porque suas faixas de geração diferem.}
 
 The canonical runner loads the declared grayscale references directly from \path{data/input/}, converts them to \texttt{float32} on $[0,255]$, and records SHA-256 digests of the resulting reference and noisy arrays in each \texttt{case.json}. These identities join the per-case records to the official CSVs. The protocol contains 61 dataset entries but 60 distinct reference hashes because Set12 entry \texttt{01.png} and Set50 entry \texttt{0.png} have the same decoded reference array.
 \pt{O executor canônico carrega diretamente as referências em tons de cinza declaradas em \path{data/input/}, converte-as para \texttt{float32} em $[0,255]$ e registra digests SHA-256 dos arrays de referência e ruidoso resultantes em cada \texttt{case.json}. Essas identidades unem os registros por caso aos CSVs oficiais. O protocolo contém 61 entradas dos conjuntos, mas 60 hashes de referência distintos, pois a entrada \texttt{01.png} do Set12 e a entrada \texttt{0.png} do Set50 têm o mesmo array de referência decodificado.}
@@ -520,47 +521,48 @@ The canonical runner loads the declared grayscale references directly from \path
 \subsection{Parameter Settings and NLM Calibration}
 \label{subsec:method_parameters}
 
-Table~\ref{tab:method_parameters} summarizes the fixed structural settings: compact NLM, IANLM, GNLM, and GHNLM use $f=1$ and $t=3$, with $k=nn=7$ for GNLM and GHNLM. The V4 NLMedians baseline uses $f=2$, $t=2$, selected in a Set12-only medium-noise sensitivity study described in Section~\ref{subsec:gnlm_structural_sensitivity}. Graph connectivity is not a parameter of standard NLM, IANLM, or NLMedians. This standardization does not require identical smoothing parameters: GNLM derives its value from the newly calibrated NLM, whereas IANLM and GHNLM retain the reported absolute $h=1$ on $[0,255]$. The historical impulse-aware setting $h=0.001h_{\mathrm{NLM}}$ and the original GEO-NLM support $(4,7,10)$ are not used to describe the current comparison.
-\pt{A Tabela~\ref{tab:method_parameters} resume as configurações estruturais fixas: NLM compacto, IANLM, GNLM e GHNLM usam $f=1$ e $t=3$, com $k=nn=7$ para GNLM e GHNLM. O baseline NLMedians da V4 usa $f=2$, $t=2$, selecionado em um estudo de sensibilidade Set12-only sob ruído médio descrito na Seção~\ref{subsec:gnlm_structural_sensitivity}. A conectividade do grafo não é um parâmetro do NLM padrão, IANLM ou NLMedians. Essa padronização não exige parâmetros de suavização idênticos: o GNLM deriva seu valor do NLM recém-calibrado, enquanto IANLM e GHNLM mantêm o valor absoluto informado $h=1$ em $[0,255]$. A configuração histórica orientada a impulsos $h=0.001h_{\mathrm{NLM}}$ e o suporte original do GEO-NLM $(4,7,10)$ não são usados para descrever a comparação atual.}
+Table~\ref{tab:method_parameters} summarizes the fixed structural settings and their supporting parameter studies. Compact NLM, IANLM, GNLM, and GHNLM use $f=1$ and $t=3$, with $k=nn=7$ for GNLM and GHNLM; NLMedians uses $f=2$, $t=2$. Graph connectivity is not a parameter of standard NLM, IANLM, or NLMedians. The studies have different scopes and should not be read as separate global optimizations: they document the density-specific NLM calibration, the absolute-$h$ choices for IANLM and GHNLM, and the structural settings of GNLM and NLMedians. GNLM derives its smoothing value from the newly calibrated NLM, whereas IANLM and GHNLM retain $h=1$ on $[0,255]$. The historical impulse-aware setting $h=0.001h_{\mathrm{NLM}}$ and the original GNLM support $(4,7,10)$ are not used in the current comparison.
+\pt{A Tabela~\ref{tab:method_parameters} resume as configurações estruturais fixas e os estudos de parâmetros que as sustentam. NLM compacto, IANLM, GNLM e GHNLM usam $f=1$ e $t=3$, com $k=nn=7$ para GNLM e GHNLM; o NLMedians usa $f=2$, $t=2$. A conectividade do grafo não é um parâmetro do NLM padrão, IANLM ou NLMedians. Os estudos têm escopos distintos e não devem ser interpretados como otimizações globais separadas: eles documentam a calibração NLM específica por densidade, as escolhas de $h$ absoluto para IANLM e GHNLM e as configurações estruturais de GNLM e NLMedians. O GNLM deriva seu parâmetro de suavização do NLM recém-calibrado, enquanto IANLM e GHNLM mantêm $h=1$ em $[0,255]$. A configuração histórica orientada a impulsos $h=0.001h_{\mathrm{NLM}}$ e o suporte original do GNLM $(4,7,10)$ não são usados na comparação atual.}
 
-\begin{table*}[!t]
+\begin{table}[!t]
 \centering
-\caption{Declared configurations in the completed V4 protocol.}
+\caption{Method configurations, sensitivity evidence, and final-record coverage in the canonical protocol.}
 \label{tab:method_parameters}
-\small
-\begin{tabular}{lcccl}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}l c p{0.36\columnwidth} c@{}}
 \toprule
-Method & $f$ & $t$ & $k/nn$ & Smoothing and status \\
+Method & $(f,t,k/nn)$ & Sensitivity evidence and smoothing & Records \\
 \midrule
-Compact NLM & 1 & 3 & -- & Density-specific calibration; 610 recorded outputs \\
-IANLM & 1 & 3 & -- & Fixed $h=1$; 610 recorded outputs \\
-NLMedians (V4) & 2 & 2 & -- & Fixed $h=0.005h_{\mathrm{NLM}}$; Set12 selection study \\
-GHNLM & 1 & 3 & 7 & Fixed $h=1$; 610 recorded outputs \\
-GNLM/GEO-NLM & 1 & 3 & 7 & $h_{\mathrm{GNLM}}=\gamma h_{\mathrm{NLM}}$; Eq.~\eqref{eq:gnlm_gamma} \\
+Compact NLM & $(1,3,\text{--})$ & Density-specific $h$ sweep & 610 \\
+IANLM & $(1,3,\text{--})$ & Set12 $\tau=0$ absolute-$h$ sweep; fixed $h=1$ & 610 \\
+NLMedians & $(2,2,\text{--})$ & Set12 structural grid; $h=0.005h_{\mathrm{NLM}}$ & 610 \\
+GHNLM & $(1,3,7)$ & $h$ and structural ablations; fixed $h=1$ & 610 \\
+GNLM & $(1,3,7)$ & Set12 structural pilot; $h=\gamma h_{\mathrm{NLM}}$ & 610 \\
 \bottomrule
 \end{tabular}
-\pt{Configurações declaradas no protocolo V4 concluído.}
-\end{table*}
+\pt{Configurações dos métodos, evidência de sensibilidade e cobertura dos registros finais no protocolo canônico.}
+\end{table}
 
 For compact NLM, the density-dependent search intervals are listed in Table~\ref{tab:nlm_calibration_ranges}. They were established empirically using the full Set12 calibration collection across the five noise densities and all evaluated tolerances, rather than transferred from the Gaussian-noise study. The same ranges are used in the Set12/Set50 comparison, and the resulting NLM parameters supply the current GNLM parameter derivation. The image manifest and calibration outputs remain necessary to document the procedure and distinguish range design from final evaluation.
 \pt{Para o NLM compacto, os intervalos de busca específicos por densidade estão na Tabela~\ref{tab:nlm_calibration_ranges}. Eles foram estabelecidos empiricamente usando a coleção completa de calibração Set12 nas cinco densidades de ruído e em todas as tolerâncias avaliadas, em vez de serem transferidos do estudo com ruído Gaussiano. As mesmas faixas são usadas na comparação Set12/Set50, e os parâmetros NLM resultantes fornecem a base para a derivação atual do parâmetro GNLM. O manifesto das imagens e as saídas de calibração continuam necessários para documentar o procedimento e distinguir a definição das faixas da avaliação final.}
 
 \begin{table}[!t]
-\centering
-\caption{Compact-NLM search offsets around the image-specific origin $h_0$. Every integer offset in the inclusive interval is evaluated.}
-\label{tab:nlm_calibration_ranges}
-\begin{tabular}{ccc}
-\toprule
-Density & Lower endpoint & Upper endpoint \\
-\midrule
-1\% & $h_0-120$ & $h_0+120$ \\
-3\% & $h_0+10$ & $h_0+170$ \\
-5\% & $h_0+40$ & $h_0+170$ \\
-10\% & $h_0+100$ & $h_0+280$ \\
-20\% & $h_0+250$ & $h_0+600$ \\
-\bottomrule
-\end{tabular}
-\pt{Deslocamentos de busca do NLM compacto em torno da origem específica da imagem $h_0$. Todo deslocamento inteiro no intervalo inclusivo é avaliado.}
+  \centering
+  \caption{Compact-NLM search offsets around the image-specific origin $h_0$. Every integer offset in the inclusive interval is evaluated.}
+  \label{tab:nlm_calibration_ranges}
+  \begin{tabular}{ccc}
+  \toprule
+  Density & Lower endpoint & Upper endpoint \\
+  \midrule
+  1\% & $h_0-120$ & $h_0+120$ \\
+  3\% & $h_0+10$ & $h_0+170$ \\
+  5\% & $h_0+40$ & $h_0+170$ \\
+  10\% & $h_0+100$ & $h_0+280$ \\
+  20\% & $h_0+250$ & $h_0+600$ \\
+  \bottomrule
+  \end{tabular}
+  \pt{Deslocamentos de busca do NLM compacto em torno da origem específica da imagem $h_0$. Todo deslocamento inteiro no intervalo inclusivo é avaliado.}
 \end{table}
 
 The protocol calls \texttt{estimate\_sigma} on the current noisy \texttt{float32} image on the $[0,255]$ scale to obtain the statistic from which the grid origin $h_0$ is constructed. This scikit-image routine is a wavelet-based estimator designed for Gaussian noise~\cite{vanderwalt2014scikit,donoho1994ideal}; its output is not the salt-and-pepper density or a validated impulse-noise scale. The current calibration script implements the transformation below:
@@ -598,8 +600,8 @@ h_{\mathrm{GNLM}}=\gamma h_{\mathrm{NLM}}.
 The logical OR in Eq.~\eqref{eq:gnlm_gamma} means that either condition selects $\gamma=1.40$; $\gamma=1.55$ is used only when both $h_{\mathrm{NLM}}\geq60$ and $\hat{\sigma}\geq10$. The branch is therefore not assigned solely by nominal impulse density. Here, $\gamma$ denotes a smoothing multiplier, whereas $k=nn=7$ denotes graph connectivity. This rule uses the newly calibrated $h_{\mathrm{NLM}}$ and does not alter the fixed $h=1$ of IANLM and GHNLM.
 \pt{O OU lógico na Eq.~\eqref{eq:gnlm_gamma} significa que qualquer uma das condições seleciona $\gamma=1.40$; $\gamma=1.55$ é usado somente quando $h_{\mathrm{NLM}}\geq60$ e $\hat{\sigma}\geq10$ simultaneamente. Portanto, o ramo não é definido apenas pela densidade nominal de impulsos. Aqui, $\gamma$ denota um multiplicador de suavização, enquanto $k=nn=7$ denota a conectividade do grafo. Essa regra usa o $h_{\mathrm{NLM}}$ recém-calibrado e não altera o $h=1$ fixo do IANLM e GHNLM.}
 
-The draft also lists median filtering, ASWMF, and non-local medians as baselines. It assigns a $3\times3$ window to the median, radius 3 to ASWMF, and fixed $f=2,t=2$ to the V4 non-local medians baseline. The NLMedians choice follows a Set12-only medium-noise study and supersedes the archived V2 setting $(2,3)$ in the completed V4 comparison. Their boundary handling and tolerance adaptation still require the implementation for independent verification. In particular, a tolerance-enabled ASWMF implementation with local min/max target selection is not identical to using $M_\tau$, and its reported $7\times7$ support differs from the radius-one fallback within IANLM.
-\pt{O rascunho também lista filtro de mediana, ASWMF e non-local medians como baselines. Ele atribui janela $3\times3$ à mediana, raio 3 ao ASWMF e $f=2,t=2$ fixos ao baseline non-local medians da V4. A escolha do NLMedians decorre de um estudo Set12-only sob ruído médio e substitui a configuração arquivada V2 $(2,3)$ na comparação V4 concluída. O tratamento de bordas e a adaptação da tolerância ainda exigem a implementação para verificação independente. Em particular, uma implementação ASWMF com tolerância e seleção de alvos por mínimo/máximo local não é idêntica ao uso de $M_\tau$, e seu suporte informado de $7\times7$ difere do fallback de raio um dentro do IANLM.}
+The comparison also includes median filtering, ASWMF, and non-local medians as baselines. It assigns a $3\times3$ window to the median, radius 3 to ASWMF, and fixed $f=2,t=2$ to the non-local medians baseline. The NLMedians choice follows a Set12-only medium-noise study and supersedes the earlier setting $(2,3)$ in the completed comparison. Their boundary handling and tolerance adaptation still require the implementation for independent verification. In particular, a tolerance-enabled ASWMF implementation with local min/max target selection is not identical to using $M_\tau$, and its reported $7\times7$ support differs from the radius-one fallback within IANLM.
+\pt{A comparação também inclui filtro de mediana, ASWMF e non-local medians como baselines. Ele atribui janela $3\times3$ à mediana, raio 3 ao ASWMF e $f=2,t=2$ fixos ao baseline non-local medians. A escolha do NLMedians decorre de um estudo Set12-only sob ruído médio e substitui a configuração anterior $(2,3)$ na comparação concluída. O tratamento de bordas e a adaptação da tolerância ainda exigem a implementação para verificação independente. Em particular, uma implementação ASWMF com tolerância e seleção de alvos por mínimo/máximo local não é idêntica ao uso de $M_\tau$, e seu suporte informado de $7\times7$ difere do fallback de raio um dentro do IANLM.}
 
 The official parameter records confirm $h_{\mathrm{NLMedians}}=0.005h_{\mathrm{NLM}}$ in all 610 conditions. They also satisfy the GNLM transfer rule in Eqs.~\eqref{eq:gnlm_gamma}--\eqref{eq:gnlm_smoothing_transfer} and record $h=1$ for every IANLM/GHNLM output.
 \pt{Os registros oficiais de parâmetros confirmam $h_{\mathrm{NLMedians}}=0.005h_{\mathrm{NLM}}$ nas 610 condições. Eles também satisfazem a regra de transferência GNLM nas Eqs.~\eqref{eq:gnlm_gamma}--\eqref{eq:gnlm_smoothing_transfer} e registram $h=1$ para todas as saídas IANLM/GHNLM.}
@@ -607,8 +609,8 @@ The official parameter records confirm $h_{\mathrm{NLMedians}}=0.005h_{\mathrm{N
 \subsection{Evaluation Metrics and Aggregation}
 \label{subsec:metrics_aggregation}
 
-Performance is to be reported separately in peak signal-to-noise ratio (PSNR) and structural similarity (SSIM)~\cite{wang2004ssim}. For grayscale arrays on $[0,255]$, PSNR is defined using the declared peak value 255, not the observed maximum of an individual image:
-\pt{O desempenho deve ser apresentado separadamente em razão sinal-ruído de pico (PSNR) e similaridade estrutural (SSIM)~\cite{wang2004ssim}. Para arrays em tons de cinza em $[0,255]$, o PSNR é definido usando o pico declarado 255, não o máximo observado de uma imagem individual:}
+Performance is evaluated separately using peak signal-to-noise ratio (PSNR) and structural similarity (SSIM)~\cite{wang2004ssim}. For grayscale arrays on $[0,255]$, PSNR is defined using the declared peak value 255, not the observed maximum of an individual image:
+\pt{O desempenho é avaliado separadamente por razão sinal-ruído de pico (PSNR) e similaridade estrutural (SSIM)~\cite{wang2004ssim}. Para arrays em tons de cinza em $[0,255]$, o PSNR é definido usando o pico declarado 255, não o máximo observado de uma imagem individual:}
 \begin{equation}
 \begin{aligned}
 \operatorname{MSE}&=\frac{1}{N}\sum_{i\in I}(x(i)-\hat{x}(i))^2,\\
@@ -635,8 +637,8 @@ s_m=\sqrt{\frac{1}{n-1}\sum_{i=1}^n(m_i-\overline{m})^2}.
 \label{eq:avg}
 \end{equation}
 
-The intended full-group sizes are 11 for Set12 and 50 for Set50. A pooled mean over 61 images weights Set50 by $50/61$; it is not an equally weighted average of the two dataset means. Mean image-level PSNR must also be distinguished from PSNR computed from a pooled pixel-level MSE. Any incomplete group must report its actual sample size and must not be compared as though it were complete.
-\pt{Os tamanhos pretendidos dos grupos completos são 11 para Set12 e 50 para Set50. Uma média agrupada sobre 61 imagens atribui peso $50/61$ ao Set50; ela não é uma média com pesos iguais entre os dois conjuntos. O PSNR médio por imagem também precisa ser distinguido do PSNR calculado a partir de um MSE agrupado por pixel. Qualquer grupo incompleto deve informar seu tamanho real e não pode ser comparado como se estivesse completo.}
+The complete group sizes are 11 for Set12 and 50 for Set50. A pooled mean over 61 images weights Set50 by $50/61$; it is not an equally weighted average of the two dataset means. Mean image-level PSNR must also be distinguished from PSNR computed from a pooled pixel-level MSE. Any incomplete group must report its actual sample size and must not be compared as though it were complete.
+\pt{Os tamanhos dos grupos completos são 11 para Set12 e 50 para Set50. Uma média agrupada sobre 61 imagens atribui peso $50/61$ ao Set50; ela não é uma média com pesos iguais entre os dois conjuntos. O PSNR médio por imagem também precisa ser distinguido do PSNR calculado a partir de um MSE agrupado por pixel. Qualquer grupo incompleto deve informar seu tamanho real e não pode ser comparado como se estivesse completo.}
 
 For an IANLM--GHNLM comparison, compute differences on matched image conditions before summarizing them. Any confidence interval must state its sampling assumptions and account for repeated conditions of the same image. A single noise realization does not estimate variability across independent noise draws; the 610 nominal conditions must not be treated as 610 independent images. No standard deviation, confidence interval, or significance statement can be recovered from the rounded means alone.
 \pt{Para comparar IANLM e GHNLM, calcular diferenças em condições correspondentes por imagem antes de resumi-las. Qualquer intervalo de confiança deve declarar suas hipóteses de amostragem e considerar as condições repetidas da mesma imagem. Uma única realização de ruído não estima a variabilidade entre sorteios independentes; as 610 condições nominais não podem ser tratadas como 610 imagens independentes. Nenhum desvio padrão, intervalo de confiança ou afirmação de significância pode ser recuperado apenas das médias arredondadas.}
@@ -645,55 +647,958 @@ For an IANLM--GHNLM comparison, compute differences on matched image conditions 
 \section{Results and Discussion}
 \label{sec:results}
 
-The version-4 archive was regenerated from the canonical runner after correcting the non-local padding and fixing the execution settings. Its \texttt{results\_partial.csv} and \texttt{summary\_partial.csv} contain the complete declared comparison: 4,270 method records over 610 conditions, with no duplicate condition--method keys or missing PSNR/SSIM values. The 140 group summaries agree with means recomputed from the image-level records to numerical precision. Each condition has the same reference and noisy-image hashes across all seven methods. Thus, the archive provides a complete, internally validated rerun of the declared protocol.
-\pt{O arquivo de versão 4 foi regenerado pelo executor canônico após a correção do padding não local e a fixação das configurações de execução. Seus arquivos \texttt{results\_partial.csv} e \texttt{summary\_partial.csv} contêm a comparação declarada completa: 4.270 registros de métodos em 610 condições, sem chaves duplicadas de condição e método nem valores ausentes de PSNR/SSIM. Os 140 resumos por grupo concordam, até a precisão numérica, com as médias recalculadas dos registros por imagem. Cada condição apresenta os mesmos hashes de referência e imagem ruidosa entre os sete métodos. Assim, o arquivo fornece uma reexecução completa e validada internamente do protocolo declarado.}
+The final results archive was regenerated from the canonical runner after correcting the non-local padding and fixing the execution settings. Its \texttt{results\_partial.csv} and \texttt{summary\_partial.csv} contain the complete declared comparison: 4,270 method records over 610 conditions, with no duplicate condition--method keys or missing PSNR/SSIM values. The 140 group summaries agree with means recomputed from the image-level records to numerical precision. Each condition has the same reference and noisy-image hashes across all seven methods. Thus, the archive provides a complete, internally validated rerun of the declared protocol.
+\pt{O arquivo final de resultados foi regenerado pelo executor canônico após a correção do padding não local e a fixação das configurações de execução. Seus arquivos \texttt{results\_partial.csv} e \texttt{summary\_partial.csv} contêm a comparação declarada completa: 4.270 registros de métodos em 610 condições, sem chaves duplicadas de condição e método nem valores ausentes de PSNR/SSIM. Os 140 resumos por grupo concordam, até a precisão numérica, com as médias recalculadas dos registros por imagem. Cada condição apresenta os mesmos hashes de referência e imagem ruidosa entre os sete métodos. Assim, o arquivo fornece uma reexecução completa e validada internamente do protocolo declarado.}
 
 \begin{table}[!t]
-\centering
-\caption{Verified CSV coverage. Each condition contains seven method records.}
-\label{tab:coverage_status}
-\small
-\begin{tabular}{lrrr}
-\toprule
-Dataset & $\tau$ & Conditions & Method records \\
-\midrule
-Set12 & 0 & 55 & 385 \\
-Set12 & 4 & 55 & 385 \\
-Set50 & 0 & 250 & 1750 \\
-Set50 & 4 & 250 & 1750 \\
-\midrule
-Total & -- & 610 & 4270 \\
-\bottomrule
-\end{tabular}
-\pt{Cobertura verificada nos CSVs. Cada condição contém sete registros de métodos.}
+  \centering
+  \caption{Verified CSV coverage. Each condition contains seven method records.}
+  \label{tab:coverage_status}
+  \small
+  \begin{tabular}{lrrr}
+  \toprule
+  Dataset & $\tau$ & Conditions & Method records \\
+  \midrule
+  Set12 & 0 & 55 & 385 \\
+  Set12 & 4 & 55 & 385 \\
+  Set50 & 0 & 250 & 1750 \\
+  Set50 & 4 & 250 & 1750 \\
+  \midrule
+  Total & -- & 610 & 4270 \\
+  \bottomrule
+  \end{tabular}
+  \pt{Cobertura verificada nos CSVs. Cada condição contém sete registros de métodos.}
 \end{table}
 
-Tables~\ref{tab:official_tau0} and \ref{tab:official_tau4} report arithmetic means of image-level PSNR and SSIM by dataset and density. Each cell contains all 11 Set12 or 50 Set50 entries. The verified per-image archive permits sample standard deviations and auxiliary scores to be recomputed; such dispersions describe variation across image entries, not repeated noise draws. Dataset-level averages below give equal weight to the five densities within each dataset, without pooling the two datasets.
-\pt{As Tabelas~\ref{tab:official_tau0} e \ref{tab:official_tau4} apresentam médias aritméticas de PSNR e SSIM por imagem, agrupadas por conjunto e densidade. Cada célula contém todas as 11 entradas do Set12 ou 50 do Set50. O arquivo verificado por imagem permite recalcular desvios padrão amostrais e scores auxiliares; essas dispersões descrevem a variação entre entradas de imagens, não sorteios repetidos do ruído. As médias por conjunto apresentadas a seguir atribuem pesos iguais às cinco densidades dentro de cada conjunto, sem agrupar os dois conjuntos.}
+Tables~\ref{tab:psnr_tau0_by_density} and~\ref{tab:ssim_tau0_by_density} report average PSNR and SSIM at $\tau=0$, while Tables~\ref{tab:psnr_by_density} and~\ref{tab:ssim_by_density} report the corresponding results at $\tau=4$. Each cell contains all 11 Set12 or 50 Set50 entries. The verified per-image archive permits sample standard deviations and auxiliary scores to be recomputed; such dispersions describe variation across image entries, not repeated noise draws. Dataset-level averages below give equal weight to the five densities within each dataset, without pooling the two datasets.
+\pt{As Tabelas~\ref{tab:psnr_tau0_by_density} e~\ref{tab:ssim_tau0_by_density} apresentam as médias de PSNR e SSIM em $\tau=0$, enquanto as Tabelas~\ref{tab:psnr_by_density} e~\ref{tab:ssim_by_density} mostram os resultados correspondentes em $\tau=4$. Cada célula contém todas as 11 entradas do Set12 ou 50 do Set50. O arquivo verificado por imagem permite recalcular desvios padrão amostrais e scores auxiliares; essas dispersões descrevem a variação entre entradas de imagens, não sorteios repetidos do ruído. As médias por conjunto apresentadas a seguir atribuem pesos iguais às cinco densidades dentro de cada conjunto, sem agrupar os dois conjuntos.}
 
 \subsection{Results at Strict Endpoint Tolerance}
 \label{subsec:results_tau0}
-\input{tables/results_tau0}
+% Formatting in the included tables: bold = IANLM; underline = best external baseline (GHNLM excluded).
+\begin{table*}[!t]
+  \centering
+  \caption{Average PSNR (dB) obtained by each method on Set12 and Set50 across salt-and-pepper noise densities for $\tau=0$. The best result is shown in bold and the second-best result is underlined.}
+  \label{tab:psnr_tau0_by_density}
+  \scriptsize
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.12}
+  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lccccc|ccccc}
+  \toprule
+  \multirow{2}{*}{\textbf{Method}} &
+  \multicolumn{5}{c|}{\textbf{Set12}} &
+  \multicolumn{5}{c}{\textbf{Set50}} \\
+  \cmidrule(lr){2-6}\cmidrule(lr){7-11}
+  & 1\% & 3\% & 5\% & 10\% & 20\%
+  & 1\% & 3\% & 5\% & 10\% & 20\% \\
+  \midrule
+  \method   & \textbf{50.66} & \textbf{46.96} & \textbf{45.08} & \textbf{42.28} & \textbf{38.90}
+            & \textbf{44.33} & \textbf{41.07} & \textbf{39.35} & \textbf{36.71} & \textbf{33.63} \\
+  \ghnlm    & \underline{43.74} & \underline{43.24} & \underline{42.33} & \underline{40.55} & \underline{34.47}
+            & \underline{36.22} & \underline{36.07} & \underline{35.77} & \underline{34.95} & \underline{31.50} \\
+  \aswmf    & 36.15 & 36.42 & 36.22 & 34.98 & 32.65
+            & 30.66 & 31.59 & 32.09 & 31.79 & 29.76 \\
+  Median    & 36.47 & 35.80 & 35.10 & 33.45 & 28.43
+            & 29.12 & 28.96 & 28.77 & 28.23 & 25.75 \\
+  \nlmedian & 39.65 & 35.22 & 31.85 & 26.18 & 18.90
+            & 34.12 & 32.17 & 29.90 & 25.16 & 18.61 \\
+  \nlm      & 29.88 & 28.78 & 27.69 & 25.59 & 22.60
+            & 26.29 & 25.78 & 25.08 & 23.73 & 21.50 \\
+  \gnlm     & 29.56 & 28.62 & 27.56 & 25.42 & 22.59
+            & 26.28 & 25.92 & 25.10 & 23.67 & 21.48 \\
+  \bottomrule
+  \end{tabular*}
+\end{table*}
+
+\begin{table*}[!t]
+  \centering
+  \caption{Average SSIM obtained by each method on Set12 and Set50 across salt-and-pepper noise densities for $\tau=0$. The best result is shown in bold and the second-best result is underlined.}
+  \label{tab:ssim_tau0_by_density}
+  \scriptsize
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.12}
+  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lccccc|ccccc}
+  \toprule
+  \multirow{2}{*}{\textbf{Method}} &
+  \multicolumn{5}{c|}{\textbf{Set12}} &
+  \multicolumn{5}{c}{\textbf{Set50}} \\
+  \cmidrule(lr){2-6}\cmidrule(lr){7-11}
+  & 1\% & 3\% & 5\% & 10\% & 20\%
+  & 1\% & 3\% & 5\% & 10\% & 20\% \\
+  \midrule
+  \method   & \textbf{0.9985} & \textbf{0.9964} & \textbf{0.9947} & \textbf{0.9902} & \textbf{0.9813}
+            & \textbf{0.9912} & \textbf{0.9859} & \textbf{0.9815} & \textbf{0.9718} & \textbf{0.9527} \\
+  \ghnlm    & \underline{0.9909} & \underline{0.9899} & \underline{0.9891} & \underline{0.9862} & \underline{0.9673}
+            & \underline{0.9611} & \underline{0.9605} & \underline{0.9600} & \underline{0.9574} & \underline{0.9372} \\
+  \aswmf    & 0.9758 & 0.9792 & 0.9798 & 0.9749 & 0.9570
+            & 0.9231 & 0.9399 & 0.9477 & 0.9468 & 0.9196 \\
+  Median    & 0.9422 & 0.9405 & 0.9384 & 0.9315 & 0.8852
+            & 0.8437 & 0.8413 & 0.8386 & 0.8297 & 0.7849 \\
+  \nlmedian & 0.9837 & 0.9601 & 0.9156 & 0.7517 & 0.4126
+            & 0.9575 & 0.9431 & 0.9089 & 0.7710 & 0.4640 \\
+  \nlm      & 0.8598 & 0.7965 & 0.7583 & 0.6749 & 0.5596
+            & 0.8206 & 0.6674 & 0.6302 & 0.5570 & 0.4528 \\
+  \gnlm     & 0.8619 & 0.8025 & 0.7624 & 0.6759 & 0.5607
+            & 0.8220 & 0.6772 & 0.6343 & 0.5558 & 0.4503 \\
+  \bottomrule
+  \end{tabular*}
+\end{table*}
 
 At $b=\tau=0$, IANLM achieves mean PSNR/SSIM of 44.7775 dB/0.992229 on Set12 and 39.0165 dB/0.976616 on Set50. GHNLM yields 40.8640 dB/0.984685 and 34.9017 dB/0.955251, respectively. IANLM is higher in both metrics in every matched condition at this tolerance. Among the five external baselines, ASWMF has the highest dataset-level means of both metrics: 35.2852 dB/0.973343 on Set12 and 31.1794 dB/0.935432 on Set50. These are aggregate comparisons, not claims of performance beyond the evaluated synthetic protocol.
 \pt{Em $b=\tau=0$, o IANLM alcança PSNR/SSIM médios de 44,7775 dB/0,992229 no Set12 e 39,0165 dB/0,976616 no Set50. O GHNLM obtém 40,8640 dB/0,984685 e 34,9017 dB/0,955251, respectivamente. O IANLM é superior nas duas métricas em toda condição correspondente nessa tolerância. Entre os cinco baselines externos, o ASWMF apresenta as maiores médias por conjunto das duas métricas: 35,2852 dB/0,973343 no Set12 e 31,1794 dB/0,935432 no Set50. Essas são comparações agregadas, não afirmações de desempenho além do protocolo sintético avaliado.}
+Table~\ref{tab:set12_medium_tau0_full} reports complete per-image Set12 results at medium noise ($p=0.05$) and strict endpoint tolerance.
+\pt{A Tabela~\ref{tab:set12_medium_tau0_full} apresenta os resultados completos por imagem do Set12 sob ruído médio ($p=0.05$) e tolerância estrita nos extremos.}
+\begin{table*}[!t]
+  \centering
+  \caption{Per-image SSIM and PSNR (dB) for the 11 Set12 images under medium salt-and-pepper noise (\(p=0.05\)) and $\tau=0$. For each image and metric, bold indicates the highest value and underline indicates the second-highest value after excluding GHNLM from the ranking. GHNLM is reported for completeness but is analyzed separately as the geodesic variant of IANLM. For the summary statistics, the same highlighting is determined from the average performance; SD, SEM, and 95\% CI inherit the formatting of the corresponding methods. SD is the sample standard deviation, SEM is SD divided by $\sqrt{11}$, and the 95\% confidence intervals are descriptive Student \(t\) intervals with 10 degrees of freedom. Each interval is stacked vertically with the lower bound first; SSIM intervals are not clipped to $[0,1]$.}
+  \label{tab:set12_medium_tau0_full}
+  \scriptsize
+  \setlength{\tabcolsep}{2pt}
+  \renewcommand{\arraystretch}{1.1}
+
+  \resizebox{\textwidth}{!}{%
+  \begin{tabular}{lccccccc|ccccccc}
+  \toprule
+  & \multicolumn{7}{c|}{\textbf{SSIM}}
+  & \multicolumn{7}{c}{\textbf{PSNR (dB)}} \\
+  \cmidrule(lr){2-8}\cmidrule(lr){9-15}
+
+  \textbf{Img.}
+  & \textbf{\texttt{IANLM}}
+  & \textbf{\texttt{GHNLM}}
+  & \textbf{\texttt{GNLM}}
+  & \textbf{\texttt{NLM}}
+  & \textbf{\texttt{Median}}
+  & \textbf{\texttt{ASWMF}}
+  & \textbf{\texttt{NLMedians}}
+  & \textbf{\texttt{IANLM}}
+  & \textbf{\texttt{GHNLM}}
+  & \textbf{\texttt{GNLM}}
+  & \textbf{\texttt{NLM}}
+  & \textbf{\texttt{Median}}
+  & \textbf{\texttt{ASWMF}}
+  & \textbf{\texttt{NLMedians}} \\
+  \midrule
+
+  01
+  & \textbf{0.9986} & 0.9953 & 0.7691 & 0.7663 & 0.9735 & \underline{0.9827} & 0.9259
+  & \textbf{48.92} & 44.01 & 27.85 & 28.09 & 35.84 & \underline{36.59} & 32.61 \\
+
+  02
+  & \textbf{0.9994} & 0.9972 & 0.8315 & 0.8321 & \underline{0.9907} & 0.9903 & 0.8804
+  & \textbf{56.98} & 52.02 & 31.62 & 31.87 & \underline{44.93} & 44.58 & 33.17 \\
+
+  03
+  & \textbf{0.9992} & 0.9975 & 0.8568 & 0.8562 & \underline{0.9910} & \underline{0.9910} & 0.9107
+  & \underline{40.54} & 40.24 & 29.99 & 30.29 & \textbf{41.16} & 31.90 & 32.79 \\
+
+  04
+  & \textbf{0.9993} & 0.9984 & 0.8394 & 0.8399 & \underline{0.9908} & 0.9905 & 0.9357
+  & \textbf{53.75} & 50.65 & 28.92 & 29.19 & \underline{41.28} & 41.12 & 33.64 \\
+
+  05
+  & \textbf{0.9994} & 0.9978 & 0.8605 & 0.8617 & \underline{0.9918} & 0.9893 & 0.9037
+  & \textbf{52.83} & 49.85 & 29.41 & 29.95 & \underline{40.27} & 39.85 & 31.79 \\
+
+  06
+  & \textbf{0.9973} & 0.9930 & 0.7639 & 0.7600 & 0.9526 & \underline{0.9831} & 0.8665
+  & \textbf{45.24} & 43.45 & 26.45 & 26.55 & 33.67 & \underline{35.66} & 31.16 \\
+
+  07
+  & \textbf{0.9962} & 0.9936 & 0.7894 & 0.7873 & 0.9658 & \underline{0.9841} & 0.9429
+  & \textbf{35.70} & 35.31 & 27.16 & 27.35 & \underline{33.30} & 33.05 & 32.23 \\
+
+  08
+  & \textbf{0.9944} & 0.9828 & 0.6558 & 0.6441 & 0.8772 & \underline{0.9703} & 0.9402
+  & \textbf{42.77} & 38.81 & 25.83 & 25.64 & 30.22 & \underline{34.75} & 31.70 \\
+
+  09
+  & \textbf{0.9927} & 0.9849 & 0.6889 & 0.6759 & 0.8130 & \underline{0.9784} & 0.9278
+  & \textbf{38.11} & 35.34 & 24.55 & 24.56 & 24.93 & \underline{33.98} & 29.70 \\
+
+  10
+  & \textbf{0.9955} & 0.9885 & 0.7057 & 0.6974 & 0.9097 & \underline{0.9781} & 0.9024
+  & \textbf{44.08} & 41.12 & 26.28 & 26.27 & 31.42 & \underline{35.78} & 30.87 \\
+
+  11
+  & \textbf{0.9698} & 0.9509 & 0.6257 & 0.6201 & 0.8666 & \underline{0.9402} & 0.9352
+  & \textbf{37.01} & 34.78 & 25.06 & 24.82 & 29.03 & \underline{31.18} & 30.68 \\
+
+  \midrule
+
+  \textbf{Avg.}
+  & \textbf{0.9947} & 0.9891 & 0.7624 & 0.7583 & 0.9384 & \underline{0.9798} & 0.9156
+  & \textbf{45.08} & 42.33 & 27.56 & 27.69 & 35.10 & \underline{36.22} & 31.85 \\
+
+  \textbf{SD}
+  & \textbf{0.0086} & 0.0137 & 0.0829 & 0.0871 & 0.0622 & \underline{0.0146} & 0.0253
+  & \textbf{7.21} & 6.30 & 2.22 & 2.40 & 6.18 & \underline{4.11} & 1.18 \\
+
+  \textbf{SEM}
+  & \textbf{0.0026} & 0.0041 & 0.0250 & 0.0263 & 0.0188 & \underline{0.0044} & 0.0076
+  & \textbf{2.18} & 1.90 & 0.67 & 0.72 & 1.86 & \underline{1.24} & 0.36 \\
+
+  \shortstack[l]{\textbf{95\%}\\\textbf{CI}}
+  %
+  & $\left[
+  \begin{array}{c}
+  \mathbf{0.9890}\\[-2pt]
+  \mathbf{-}\\[-2pt]
+  \mathbf{1.0005}
+  \end{array}
+  \right]$
+  %
+  & $\left[
+  \begin{array}{c}
+  \mathbf{0.9890}\\[-2pt]
+  \mathbf{-}\\[-2pt]
+  \mathbf{1.0005}
+  \end{array}
+  \right]$
+  %
+  & $\left[
+  \begin{array}{c}
+  0.7067\\[-2pt]
+  -\\[-2pt]
+  0.8181
+  \end{array}
+  \right]$
+  %
+  & $\left[
+  \begin{array}{c}
+  0.6997\\[-2pt]
+  -\\[-2pt]
+  0.8168
+  \end{array}
+  \right]$
+  %
+  & $\left[
+  \begin{array}{c}
+  0.8966\\[-2pt]
+  -\\[-2pt]
+  0.9802
+  \end{array}
+  \right]$
+  %
+  & $\underline{\left[
+  \begin{array}{c}
+  0.9700\\[-2pt]
+  -\\[-2pt]
+  0.9897
+  \end{array}
+  \right]}$
+  %
+  & $\left[
+  \begin{array}{c}
+  0.8986\\[-2pt]
+  -\\[-2pt]
+  0.9325
+  \end{array}
+  \right]$
+  %
+  & $\left[
+  \begin{array}{c}
+  \mathbf{40.24}\\[-2pt]
+  \mathbf{-}\\[-2pt]
+  \mathbf{49.93}
+  \end{array}
+  \right]$
+  %
+  & $\left[
+  \begin{array}{c}
+  38.09\\[-2pt]
+  -\\[-2pt]
+  46.56
+  \end{array}
+  \right]$
+  %
+  & $\left[
+  \begin{array}{c}
+  26.07\\[-2pt]
+  -\\[-2pt]
+  29.04
+  \end{array}
+  \right]$
+  %
+  & $\left[
+  \begin{array}{c}
+  26.08\\[-2pt]
+  -\\[-2pt]
+  29.30
+  \end{array}
+  \right]$
+  %
+  & $\left[
+  \begin{array}{c}
+  30.94\\[-2pt]
+  -\\[-2pt]
+  39.25
+  \end{array}
+  \right]$
+  %
+  & $\underline{\left[
+  \begin{array}{c}
+  33.46\\[-2pt]
+  -\\[-2pt]
+  38.98
+  \end{array}
+  \right]}$
+  %
+  & $\left[
+  \begin{array}{c}
+  31.05\\[-2pt]
+  -\\[-2pt]
+  32.64
+  \end{array}
+  \right]$
+  \\
+
+  \bottomrule
+  \end{tabular}}
+\end{table*}
+
+Figure~\ref{fig:set50_psnr_extreme_tau0} complements the dataset-level means with per-image PSNR for all 50 Set50 entries. The curves use the fixed protocol image order, so each horizontal position corresponds to the same image across methods.
+\pt{A Figura~\ref{fig:set50_psnr_extreme_tau0} complementa as médias por conjunto com o PSNR por imagem para as 50 entradas do Set50. As curvas seguem a ordem fixa de imagens do protocolo, de modo que cada posição horizontal corresponde à mesma imagem entre os métodos.}
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{images/graphs/per_image_curves/set50/graph_psnr_extreme_tau0_unordered.pdf}
+\caption{Per-image PSNR for the 50 Set50 entries at the extreme impulse-density condition and $\tau=0$. Curves follow the fixed protocol image order; horizontal positions are matched across methods and are not sorted by PSNR.}
+\label{fig:set50_psnr_extreme_tau0}
+\pt{PSNR por imagem para as 50 entradas do Set50 na condição de densidade extrema de impulsos e $\tau=0$. As curvas seguem a ordem fixa do protocolo; as posições horizontais são correspondentes entre métodos e não estão ordenadas por PSNR.}
+\end{figure*}
 
 \subsection{Results with Tolerance \texorpdfstring{$\tau=4$}{tau=4}}
 \label{subsec:results_tau4}
-\input{tables/results_tau4}
+% Formatting in the included tables: bold = IANLM; underline = best external baseline (GHNLM excluded).
+\begin{table*}[!t]
+  \centering
+  \caption{Average PSNR (dB) obtained by each method on Set12 and Set50 across salt-and-pepper noise densities. The best result is shown in bold, and the best external baseline, excluding GHNLM from the ranking, is underlined.}
+  \label{tab:psnr_by_density}
+  \scriptsize
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.12}
+  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lccccc|ccccc}
+  \toprule
+  \multirow{2}{*}{\textbf{Method}} &
+  \multicolumn{5}{c|}{\textbf{Set12}} &
+  \multicolumn{5}{c}{\textbf{Set50}} \\
+  \cmidrule(lr){2-6}\cmidrule(lr){7-11}
+  & 1\% & 3\% & 5\% & 10\% & 20\%
+  & 1\% & 3\% & 5\% & 10\% & 20\% \\
+  \midrule
+
+  \method
+  & \textbf{49.41}
+  & \textbf{45.97}
+  & \textbf{44.20}
+  & \textbf{41.44}
+  & \textbf{38.11}
+  & \textbf{42.20}
+  & \textbf{39.54}
+  & \textbf{38.07}
+  & \textbf{35.71}
+  & \textbf{32.78} \\
+
+  \ghnlm
+  & 43.11
+  & 42.59
+  & 41.74
+  & 39.89
+  & 34.08
+  & 35.55
+  & 35.35
+  & 35.05
+  & 34.22
+  & 31.03 \\
+
+  \aswmf
+  & 32.43
+  & 26.23
+  & 22.63
+  & 18.00
+  & 13.89
+  & 28.97
+  & 25.02
+  & 22.03
+  & 17.76
+  & 13.75 \\
+
+  Median
+  & 36.47
+  & \underline{35.80}
+  & \underline{35.10}
+  & \underline{33.47}
+  & \underline{28.52}
+  & 29.12
+  & 28.96
+  & 28.78
+  & \underline{28.23}
+  & \underline{25.80} \\
+
+  \nlmedian
+  & \underline{39.72}
+  & 35.28
+  & 31.93
+  & 26.30
+  & 19.05
+  & \underline{34.11}
+  & \underline{32.19}
+  & \underline{29.95}
+  & 25.27
+  & 18.75 \\
+
+  \nlm
+  & 29.94
+  & 28.83
+  & 27.74
+  & 25.63
+  & 22.63
+  & 26.38
+  & 25.82
+  & 25.12
+  & 23.77
+  & 21.52 \\
+
+  \gnlm
+  & 29.62
+  & 28.67
+  & 27.61
+  & 25.46
+  & 22.61
+  & 26.37
+  & 25.96
+  & 25.13
+  & 23.70
+  & 21.51 \\
+
+  \bottomrule
+  \end{tabular*}
+\end{table*}
+
+\begin{table*}[!t]
+  \centering
+  \caption{Average SSIM obtained by each method on Set12 and Set50 across salt-and-pepper noise densities. The best result is shown in bold, and the best external baseline, excluding GHNLM from the ranking, is underlined.}
+  \label{tab:ssim_by_density}
+  \scriptsize
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.12}
+  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lccccc|ccccc}
+  \toprule
+  \multirow{2}{*}{\textbf{Method}} &
+  \multicolumn{5}{c|}{\textbf{Set12}} &
+  \multicolumn{5}{c}{\textbf{Set50}} \\
+  \cmidrule(lr){2-6}\cmidrule(lr){7-11}
+  & 1\% & 3\% & 5\% & 10\% & 20\%
+  & 1\% & 3\% & 5\% & 10\% & 20\% \\
+  \midrule
+
+  \method
+  & \textbf{0.9930}
+  & \textbf{0.9889}
+  & \textbf{0.9856}
+  & \textbf{0.9791}
+  & \textbf{0.9694}
+  & \textbf{0.9869}
+  & \textbf{0.9804}
+  & \textbf{0.9752}
+  & \textbf{0.9640}
+  & \textbf{0.9431} \\
+
+  \ghnlm
+  & 0.9852
+  & 0.9823
+  & 0.9798
+  & 0.9751
+  & 0.9569
+  & 0.9563
+  & 0.9546
+  & 0.9533
+  & 0.9494
+  & 0.9289 \\
+
+  \aswmf
+  & 0.9510
+  & 0.8290
+  & 0.6681
+  & 0.3664
+  & 0.1579
+  & 0.9029
+  & 0.8154
+  & 0.6848
+  & 0.4170
+  & 0.1976 \\
+
+  Median
+  & 0.9422
+  & 0.9405
+  & \underline{0.9384}
+  & \underline{0.9316}
+  & \underline{0.8859}
+  & 0.8437
+  & 0.8414
+  & 0.8386
+  & \underline{0.8297}
+  & \underline{0.7855} \\
+
+  \nlmedian
+  & \underline{0.9838}
+  & \underline{0.9606}
+  & 0.9169
+  & 0.7553
+  & 0.4205
+  & \underline{0.9575}
+  & \underline{0.9433}
+  & \underline{0.9098}
+  & 0.7744
+  & 0.4718 \\
+
+  \nlm
+  & 0.8609
+  & 0.7980
+  & 0.7602
+  & 0.6777
+  & 0.5632
+  & 0.8223
+  & 0.6689
+  & 0.6320
+  & 0.5593
+  & 0.4553 \\
+
+  \gnlm
+  & 0.8630
+  & 0.8040
+  & 0.7646
+  & 0.6785
+  & 0.5642
+  & 0.8238
+  & 0.6788
+  & 0.6359
+  & 0.5579
+  & 0.4527 \\
+
+  \bottomrule
+  \end{tabular*}
+\end{table*}
 
 At $b=\tau=4$, the generation bands are 0--4 and 251--255. IANLM achieves mean PSNR/SSIM of 43.8261 dB/0.983192 on Set12 and 37.6593 dB/0.969920 on Set50, compared with 40.2819 dB/0.975853 and 34.2389 dB/0.948517 for GHNLM. The strongest external baseline by the dataset-level means of both metrics is median filtering, at 33.8741 dB/0.927712 and 28.1792 dB/0.827790. ASWMF falls to 22.6380 dB/0.594469 and 21.5055 dB/0.603548. Its change in performance warrants inspection of its impulse-selection and tolerance handling; the records alone do not identify the cause.
 \pt{Em $b=\tau=4$, as faixas de geração são 0--4 e 251--255. O IANLM alcança PSNR/SSIM médios de 43,8261 dB/0,983192 no Set12 e 37,6593 dB/0,969920 no Set50, comparados com 40,2819 dB/0,975853 e 34,2389 dB/0,948517 do GHNLM. O baseline externo mais forte pelas médias por conjunto das duas métricas é o filtro de mediana, com 33,8741 dB/0,927712 e 28,1792 dB/0,827790. O ASWMF cai para 22,6380 dB/0,594469 e 21,5055 dB/0,603548. Sua mudança de desempenho justifica inspecionar a seleção de impulsos e o tratamento da tolerância; os registros, isoladamente, não identificam a causa.}
+Table~\ref{tab:set12_moderate_tau4_full} reports complete per-image Set12 results at moderate noise ($p=0.03$) and $\tau=4$.
+\pt{A Tabela~\ref{tab:set12_moderate_tau4_full} apresenta os resultados completos por imagem do Set12 sob ruído moderado ($p=0.03$) e $\tau=4$.}
+\begin{table*}[!t]
+  \centering
+  \caption{Per-image SSIM and PSNR (dB) for the 11 Set12 images under moderate salt-and-pepper noise (\(p=0.03\)) and $\tau=4$. For each image and metric, bold indicates the highest value and underline indicates the second-highest value after excluding GHNLM from the ranking. GHNLM is reported for completeness but is analyzed separately as the geodesic variant of IANLM. For the summary statistics, the same highlighting is determined from the average performance; SD, SEM, and 95\% CI inherit the formatting of the corresponding methods. SD is the sample standard deviation, SEM is SD divided by $\sqrt{11}$, and the 95\% confidence intervals are descriptive Student \(t\) intervals with 10 degrees of freedom across the image entries, rather than estimates of repeated-noise uncertainty. Each interval is stacked vertically with the lower bound first; SSIM intervals are not clipped to $[0,1]$.}
+  \label{tab:set12_moderate_tau4_full}
+  \scriptsize
+  \setlength{\tabcolsep}{2pt}
+  \renewcommand{\arraystretch}{1.1}
 
-Relative to $b=\tau=0$, both the corruption values and the detector change. The observed differences therefore compare two matched-band settings, not an isolated detector ablation. The aggregate CSVs themselves do not contain detection masks, but the V4 archive co-locates each mask and detector record with its case, permitting precision and recall to be recomputed from the archived artifacts.
-\pt{Em relação a $b=\tau=0$, tanto os valores da corrupção quanto o detector mudam. As diferenças observadas, portanto, comparam duas configurações de faixas correspondentes, não uma ablação isolada do detector. Os CSVs agregados não contêm máscaras de detecção, mas o arquivo V4 localiza cada máscara e registro do detector junto a seu caso, permitindo recalcular precisão e revocação a partir dos artefatos arquivados.}
+  \resizebox{\textwidth}{!}{%
+  \begin{tabular}{lccccccc|ccccccc}
+  \toprule
+  & \multicolumn{7}{c|}{\textbf{SSIM}}
+  & \multicolumn{7}{c}{\textbf{PSNR (dB)}} \\
+  \cmidrule(lr){2-8}\cmidrule(lr){9-15}
+
+  \textbf{Img.}
+  & \textbf{\texttt{IANLM}}
+  & \textbf{\texttt{GHNLM}}
+  & \textbf{\texttt{GNLM}}
+  & \textbf{\texttt{NLM}}
+  & \textbf{\texttt{Median}}
+  & \textbf{\texttt{ASWMF}}
+  & \textbf{\texttt{NLMedians}}
+  & \textbf{\texttt{IANLM}}
+  & \textbf{\texttt{GHNLM}}
+  & \textbf{\texttt{GNLM}}
+  & \textbf{\texttt{NLM}}
+  & \textbf{\texttt{Median}}
+  & \textbf{\texttt{ASWMF}}
+  & \textbf{\texttt{NLMedians}} \\
+  \midrule
+
+  01
+  & \textbf{0.9990}
+  & 0.9953
+  & 0.8128
+  & 0.8097
+  & \underline{0.9749}
+  & 0.8196
+  & 0.9719
+  & \textbf{50.00}
+  & 44.26
+  & 28.92
+  & 29.28
+  & \underline{36.36}
+  & 26.45
+  & 36.35 \\
+
+  02
+  & \textbf{0.9996}
+  & 0.9974
+  & 0.8704
+  & 0.8713
+  & \underline{0.9917}
+  & 0.8035
+  & 0.9469
+  & \textbf{59.63}
+  & 52.98
+  & 33.03
+  & 33.41
+  & \underline{46.24}
+  & 27.14
+  & 37.64 \\
+
+  03
+  & \textbf{0.9985}
+  & 0.9967
+  & 0.8927
+  & 0.8936
+  & \underline{0.9922}
+  & 0.8248
+  & 0.9650
+  & \underline{40.52}
+  & 40.33
+  & 31.39
+  & 31.90
+  & \textbf{42.85}
+  & 25.87
+  & 37.23 \\
+
+  04
+  & \textbf{0.9996}
+  & 0.9986
+  & 0.8707
+  & 0.8716
+  & \underline{0.9921}
+  & 0.8514
+  & 0.9745
+  & \textbf{56.19}
+  & 53.23
+  & 29.91
+  & 30.30
+  & \underline{42.47}
+  & 26.70
+  & 38.10 \\
+
+  05
+  & \textbf{0.9997}
+  & 0.9980
+  & 0.8954
+  & 0.8973
+  & \underline{0.9933}
+  & 0.8359
+  & 0.9617
+  & \textbf{55.41}
+  & 51.90
+  & 30.82
+  & 31.50
+  & \underline{41.73}
+  & 26.80
+  & 35.84 \\
+
+  06
+  & \textbf{0.9984}
+  & 0.9932
+  & 0.8089
+  & 0.8036
+  & \underline{0.9545}
+  & 0.8383
+  & 0.9376
+  & \textbf{47.22}
+  & 44.09
+  & 27.55
+  & 27.73
+  & 33.93
+  & 26.11
+  & \underline{34.05} \\
+
+  07
+  & \textbf{0.9961}
+  & 0.9929
+  & 0.8286
+  & 0.8256
+  & 0.9675
+  & 0.8323
+  & \underline{0.9760}
+  & \underline{34.44}
+  & 34.14
+  & 28.17
+  & 28.40
+  & 33.76
+  & 25.79
+  & \textbf{35.83} \\
+
+  08
+  & \textbf{0.9960}
+  & 0.9821
+  & 0.6978
+  & 0.6816
+  & 0.8805
+  & 0.8370
+  & \underline{0.9646}
+  & \textbf{43.72}
+  & 38.74
+  & 26.73
+  & 26.40
+  & 30.45
+  & 26.59
+  & \underline{34.24} \\
+
+  09
+  & \textbf{0.9958}
+  & 0.9869
+  & 0.7459
+  & 0.7229
+  & 0.8164
+  & 0.8630
+  & \underline{0.9639}
+  & \textbf{40.61}
+  & 36.34
+  & 25.82
+  & 25.51
+  & 25.06
+  & 26.27
+  & \underline{32.39} \\
+
+  10
+  & \textbf{0.9972}
+  & 0.9888
+  & 0.7477
+  & 0.7368
+  & 0.9124
+  & 0.8334
+  & \underline{0.9527}
+  & \textbf{46.29}
+  & 41.88
+  & 27.25
+  & 27.21
+  & 31.70
+  & 26.49
+  & \underline{33.90} \\
+
+  11
+  & \underline{0.8982}
+  & 0.8749
+  & 0.6736
+  & 0.6640
+  & 0.8700
+  & 0.7794
+  & \textbf{0.9513}
+  & \underline{31.58}
+  & 30.58
+  & 25.75
+  & 25.49
+  & 29.26
+  & 24.35
+  & \textbf{32.47} \\
+
+  \midrule
+
+  \textbf{Avg.}
+  & \textbf{0.9889}
+  & 0.9823
+  & 0.8040
+  & 0.7980
+  & 0.9405
+  & 0.8290
+  & \underline{0.9606}
+  & \textbf{45.97}
+  & 42.59
+  & 28.67
+  & 28.83
+  & \underline{35.80}
+  & 26.23
+  & 35.28 \\
+
+  \textbf{SD}
+  & \textbf{0.0301}
+  & 0.0360
+  & 0.0779
+  & 0.0846
+  & 0.0613
+  & 0.0226
+  & \underline{0.0121}
+  & \textbf{8.95}
+  & 7.67
+  & 2.38
+  & 2.68
+  & \underline{6.71}
+  & 0.74
+  & 1.99 \\
+
+  \textbf{SEM}
+  & \textbf{0.0091}
+  & 0.0108
+  & 0.0235
+  & 0.0255
+  & 0.0185
+  & 0.0068
+  & \underline{0.0037}
+  & \textbf{2.70}
+  & 2.31
+  & 0.72
+  & 0.81
+  & \underline{2.02}
+  & 0.22
+  & 0.60 \\
+
+  \shortstack[l]{\textbf{95\%}\\\textbf{CI}}
+  %
+  & $\left[
+  \begin{array}{c}
+  \mathbf{0.9687}\\[-2pt]
+  \mathbf{-}\\[-2pt]
+  \mathbf{1.0091}
+  \end{array}
+  \right]$
+  %
+  & $\left[
+  \begin{array}{c}
+  0.9581\\[-2pt]
+  -\\[-2pt]
+  1.0064
+  \end{array}
+  \right]$
+  %
+  & $\left[
+  \begin{array}{c}
+  0.7517\\[-2pt]
+  -\\[-2pt]
+  0.8564
+  \end{array}
+  \right]$
+  %
+  & $\left[
+  \begin{array}{c}
+  0.7411\\[-2pt]
+  -\\[-2pt]
+  0.8548
+  \end{array}
+  \right]$
+  %
+  & $\left[
+  \begin{array}{c}
+  0.8993\\[-2pt]
+  -\\[-2pt]
+  0.9817
+  \end{array}
+  \right]$
+  %
+  & $\left[
+  \begin{array}{c}
+  0.8138\\[-2pt]
+  -\\[-2pt]
+  0.8441
+  \end{array}
+  \right]$
+  %
+  & $\underline{\left[
+  \begin{array}{c}
+  0.9524\\[-2pt]
+  -\\[-2pt]
+  0.9687
+  \end{array}
+  \right]}$
+  %
+  & $\left[
+  \begin{array}{c}
+  \mathbf{39.95}\\[-2pt]
+  \mathbf{-}\\[-2pt]
+  \mathbf{51.98}
+  \end{array}
+  \right]$
+  %
+  & $\left[
+  \begin{array}{c}
+  37.44\\[-2pt]
+  -\\[-2pt]
+  47.74
+  \end{array}
+  \right]$
+  %
+  & $\left[
+  \begin{array}{c}
+  27.07\\[-2pt]
+  -\\[-2pt]
+  30.27
+  \end{array}
+  \right]$
+  %
+  & $\left[
+  \begin{array}{c}
+  27.03\\[-2pt]
+  -\\[-2pt]
+  30.64
+  \end{array}
+  \right]$
+  %
+  & $\underline{\left[
+  \begin{array}{c}
+  31.29\\[-2pt]
+  -\\[-2pt]
+  40.31
+  \end{array}
+  \right]}$
+  %
+  & $\left[
+  \begin{array}{c}
+  25.74\\[-2pt]
+  -\\[-2pt]
+  26.73
+  \end{array}
+  \right]$
+  %
+  & $\left[
+  \begin{array}{c}
+  33.94\\[-2pt]
+  -\\[-2pt]
+  36.62
+  \end{array}
+  \right]$
+  \\
+
+  \bottomrule
+  \end{tabular}}
+\end{table*}
+
+Relative to $b=\tau=0$, both the corruption values and the detector change. The observed differences therefore compare two matched-band settings, not an isolated detector ablation. The aggregate CSVs themselves do not contain detection masks, but the experimental archive co-locates each mask and detector record with its case, permitting precision and recall to be recomputed from the archived artifacts.
+\pt{Em relação a $b=\tau=0$, tanto os valores da corrupção quanto o detector mudam. As diferenças observadas, portanto, comparam duas configurações de faixas correspondentes, não uma ablação isolada do detector. Os CSVs agregados não contêm máscaras de detecção, mas o arquivo experimental localiza cada máscara e registro do detector junto a seu caso, permitindo recalcular precisão e revocação a partir dos artefatos arquivados.}
+Figure~\ref{fig:set50_psnr_extreme_tau4} shows the corresponding per-image PSNR curves for the same 50 Set50 entries at $\tau=4$, again in the fixed protocol image order.
+\pt{A Figura~\ref{fig:set50_psnr_extreme_tau4} mostra as curvas correspondentes de PSNR por imagem para as mesmas 50 entradas do Set50 em $\tau=4$, também na ordem fixa de imagens do protocolo.}
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{images/graphs/per_image_curves/set50/graph_psnr_extreme_tau4_unordered.pdf}
+\caption{Per-image PSNR for the 50 Set50 entries at the extreme impulse-density condition and $\tau=4$. Curves follow the fixed protocol image order; horizontal positions are matched across methods and are not sorted by PSNR.}
+\label{fig:set50_psnr_extreme_tau4}
+\pt{PSNR por imagem para as 50 entradas do Set50 na condição de densidade extrema de impulsos e $\tau=4$. As curvas seguem a ordem fixa do protocolo; as posições horizontais são correspondentes entre métodos e não estão ordenadas por PSNR.}
+\end{figure*}
 
 \subsection{IANLM versus GHNLM}
 \label{subsec:ianlm_vs_ghnlm_results}
-\input{tables/paired_results}
+\begin{table}[!t]
+  \centering
+  \caption{Paired IANLM minus GHNLM differences in the canonical comparison. Values are mean $\pm$ sample standard deviation over matched image--density conditions.}
+  \label{tab:official_paired}
+  \scriptsize
+  \setlength{\tabcolsep}{2pt}
+  \resizebox{\columnwidth}{!}{%
+    \begin{tabular}{ccrcc}
+      \toprule
+      Dataset & $\tau$ & $n$ & $\Delta$PSNR (dB) & $\Delta$SSIM\\
+      \midrule
+      Set12 & 0 & 55  & $3.9135\pm3.0809$ & $0.007544\pm0.006171$\\
+      Set12 & 4 & 55  & $3.5442\pm3.0019$ & $0.007339\pm0.006131$\\
+      Set50 & 0 & 250 & $4.1148\pm3.1915$ & $0.021365\pm0.015747$\\
+      Set50 & 4 & 250 & $3.4204\pm2.9685$ & $0.021402\pm0.016311$\\
+      \bottomrule
+    \end{tabular}
+  }
+\end{table}
 
-All 610 IANLM outputs pair with GHNLM outputs on dataset entry, density, tolerance, and reference/noisy hashes, giving 305 pairs per tolerance. Table~\ref{tab:official_paired} summarizes IANLM minus GHNLM differences. IANLM has higher PSNR and SSIM in all 610 paired conditions. The reported standard deviations describe paired condition-level differences; repeated densities, tolerances, and the shared reference across datasets preclude treating the 610 pairs as independent images or interpreting the descriptive differences as a generalization guarantee.
-\pt{Todas as 610 saídas IANLM se emparelham com saídas GHNLM pela entrada do conjunto, densidade, tolerância e hashes de referência/imagem ruidosa, totalizando 305 pares por tolerância. A Tabela~\ref{tab:official_paired} resume diferenças IANLM menos GHNLM. O IANLM apresenta PSNR e SSIM maiores nas 610 condições emparelhadas. Os desvios padrão apresentados descrevem diferenças emparelhadas por condição; as densidades e tolerâncias repetidas e a referência compartilhada entre conjuntos impedem tratar os 610 pares como imagens independentes ou interpretar as diferenças descritivas como garantia de generalização.}
+All 610 IANLM outputs pair with GHNLM outputs on dataset entry, density, tolerance, and reference/noisy hashes, giving 305 pairs per tolerance. The paired-results summary in this subsection reports IANLM minus GHNLM differences. IANLM has higher PSNR and SSIM in all 610 paired conditions. The reported standard deviations describe paired condition-level differences; repeated densities, tolerances, and the shared reference across datasets preclude treating the 610 pairs as independent images or interpreting the descriptive differences as a generalization guarantee.
+\pt{Todas as 610 saídas IANLM se emparelham com saídas GHNLM pela entrada do conjunto, densidade, tolerância e hashes de referência/imagem ruidosa, totalizando 305 pares por tolerância. O resumo de resultados emparelhados nesta subseção apresenta as diferenças IANLM menos GHNLM. O IANLM apresenta PSNR e SSIM maiores nas 610 condições emparelhadas. Os desvios padrão apresentados descrevem diferenças emparelhadas por condição; as densidades e tolerâncias repetidas e a referência compartilhada entre conjuntos impedem tratar os 610 pares como imagens independentes ou interpretar as diferenças descritivas como garantia de generalização.}
 
 The fixed $h=1$ setting is confirmed in both methods, while the common structural parameters follow the author-confirmed protocol. The CSV schema does not include $f$, $t$, $nn$, or the component operators; implementation-level verification that only the distance model changes remains separate from numerical pairing.
 \pt{A configuração fixa $h=1$ está confirmada nos dois métodos, enquanto os parâmetros estruturais comuns seguem o protocolo confirmado pelos autores. O esquema CSV não inclui $f$, $t$, $nn$ nem os operadores dos componentes; a verificação, no nível de implementação, de que somente o modelo de distância muda permanece separada do emparelhamento numérico.}
@@ -705,8 +1610,8 @@ The fixed $h=1$ setting is confirmed in both methods, while the common structura
 \subsection{Fixed GNLM and GHNLM Structural Settings}
 \label{subsec:gnlm_structural_sensitivity}
 
-The GNLM and GHNLM comparison fixes $(f,t,k)=(1,3,7)$ to limit variation in patch radius, search region, and graph connectivity. This is a matched protocol choice for the compact NLM/GNLM/GHNLM comparison, not evidence that the setting is individually optimal for every method or condition. The original GEO-NLM ablation at Gaussian-noise level $\sigma=5$ concerns a different noise model and does not validate the compact setting for salt-and-pepper noise. A separate Set12-only NLMedians sensitivity study evaluates the full grid $f\in\{1,2,3\}$ and $t\in\{2,3,4\}$ under medium noise at both principal tolerances. The fixed V4 choice $(f,t)=(2,2)$ is a PSNR/runtime compromise: it dominates the historical $(2,3)$ setting in that study, whereas $(3,2)$ has higher mean SSIM and auxiliary score. The study index, protocol, and complete grid summaries are archived at \path{src/salt_experiments/unified_comparison/studies/ablations/README.md} and \path{data/output/studies/ablations/nlmediansStructuralSensitivitySet12MediumV1/}. The GNLM structural pilot is co-located at \path{data/output/studies/ablations/gnlmStructuralSensitivitySet12MediumV1/}. These structural studies select or document settings only; they neither use Set50 for selection nor replace matched component ablations of switching, candidate rejection, replacement, spatial weighting, and fallback.
-\pt{A comparação GNLM--GHNLM fixa $(f,t,k)=(1,3,7)$ para limitar a variação no raio de patch, na região de busca e na conectividade do grafo. Esta é uma escolha de protocolo compatibilizada para a comparação entre NLM compacto, GNLM e GHNLM, e não evidência de que a configuração seja individualmente ótima para todo método ou condição. A ablação original do GEO-NLM no nível de ruído Gaussiano $\sigma=5$ trata de outro modelo de ruído e não valida a configuração compacta para ruído sal-e-pimenta. Um estudo de sensibilidade NLMedians separado, apenas no Set12, avalia a grade completa $f\in\{1,2,3\}$ e $t\in\{2,3,4\}$ sob ruído médio nas duas tolerâncias principais. A escolha fixa da V4 $(f,t)=(2,2)$ é um compromisso PSNR/tempo: ela domina a configuração histórica $(2,3)$ nesse estudo, enquanto $(3,2)$ tem SSIM e score auxiliar médios maiores. O índice do estudo, protocolo e resumos completos da grade estão arquivados em \path{src/salt_experiments/unified_comparison/studies/ablations/README.md} e \path{data/output/studies/ablations/nlmediansStructuralSensitivitySet12MediumV1/}. O piloto estrutural GNLM está no mesmo índice em \path{data/output/studies/ablations/gnlmStructuralSensitivitySet12MediumV1/}. Esses estudos estruturais apenas selecionam ou documentam configurações; não usam o Set50 para seleção nem substituem ablações correspondentes de componentes de chaveamento, rejeição de candidatos, substituição, ponderação espacial e fallback.}
+The GNLM and GHNLM comparison fixes $(f,t,k)=(1,3,7)$ to limit variation in patch radius, search region, and graph connectivity. This is a matched protocol choice for the compact NLM/GNLM/GHNLM comparison, not evidence that the setting is individually optimal for every method or condition. The original GEO-NLM ablation at Gaussian-noise level $\sigma=5$ concerns a different noise model and does not validate the compact setting for salt-and-pepper noise. A separate Set12-only NLMedians sensitivity study evaluates the full grid $f\in\{1,2,3\}$ and $t\in\{2,3,4\}$ under medium noise at both principal tolerances. The fixed experimental choice $(f,t)=(2,2)$ is a PSNR/runtime compromise: it dominates the historical $(2,3)$ setting in that study, whereas $(3,2)$ has higher mean SSIM and auxiliary score. The study index, protocol, and complete grid summaries are archived at \path{src/salt_experiments/unified_comparison/studies/ablations/README.md} and \path{data/output/studies/ablations/nlmediansStructuralSensitivitySet12MediumV1/}. The GNLM structural pilot is co-located at \path{data/output/studies/ablations/gnlmStructuralSensitivitySet12MediumV1/}. These structural studies select or document settings only; they neither use Set50 for selection nor replace matched component ablations of switching, candidate rejection, replacement, spatial weighting, and fallback.
+\pt{A comparação GNLM--GHNLM fixa $(f,t,k)=(1,3,7)$ para limitar a variação no raio de patch, na região de busca e na conectividade do grafo. Esta é uma escolha de protocolo compatibilizada para a comparação entre NLM compacto, GNLM e GHNLM, e não evidência de que a configuração seja individualmente ótima para todo método ou condição. A ablação original do GEO-NLM no nível de ruído Gaussiano $\sigma=5$ trata de outro modelo de ruído e não valida a configuração compacta para ruído sal-e-pimenta. Um estudo de sensibilidade NLMedians separado, apenas no Set12, avalia a grade completa $f\in\{1,2,3\}$ e $t\in\{2,3,4\}$ sob ruído médio nas duas tolerâncias principais. A escolha fixa do experimento $(f,t)=(2,2)$ é um compromisso PSNR/tempo: ela domina a configuração histórica $(2,3)$ nesse estudo, enquanto $(3,2)$ tem SSIM e score auxiliar médios maiores. O índice do estudo, protocolo e resumos completos da grade estão arquivados em \path{src/salt_experiments/unified_comparison/studies/ablations/README.md} e \path{data/output/studies/ablations/nlmediansStructuralSensitivitySet12MediumV1/}. O piloto estrutural GNLM está no mesmo índice em \path{data/output/studies/ablations/gnlmStructuralSensitivitySet12MediumV1/}. Esses estudos estruturais apenas selecionam ou documentam configurações; não usam o Set50 para seleção nem substituem ablações correspondentes de componentes de chaveamento, rejeição de candidatos, substituição, ponderação espacial e fallback.}
 
 \subsection{Sensitivity to the NLM Calibration Range}
 \label{subsec:h_sensitivity}
@@ -714,11 +1619,11 @@ The GNLM and GHNLM comparison fixes $(f,t,k)=(1,3,7)$ to limit variation in patc
 The intervals in Table~\ref{tab:nlm_calibration_ranges} concern compact NLM, not the fixed smoothing parameters of IANLM and GHNLM. A sensitivity analysis must retain the full score curves, selected $h$, grid spacing, and frequency of optima at the search boundaries. Transfer to Set50 should use the ranges fixed from Set12 without redefining them after examining Set50 results. Full-reference selection of $h$ on an evaluated Set50 image remains a benchmark calibration even if the interval itself was fixed earlier.
 \pt{Os intervalos da Tabela~\ref{tab:nlm_calibration_ranges} dizem respeito ao NLM compacto, não aos parâmetros de suavização fixos do IANLM e GHNLM. Uma análise de sensibilidade deve preservar curvas completas de score, $h$ selecionado, espaçamento da grade e frequência de ótimos nas bordas da busca. A transferência para Set50 deve usar faixas fixadas no Set12 sem redefini-las após examinar resultados do Set50. A seleção de $h$ com referência completa na própria imagem Set50 avaliada continua sendo calibração de benchmark, mesmo que o intervalo tenha sido fixado anteriormente.}
 
-The 610 V4 NLM records identify full-reference calibration on the current noisy observation. All selected values lie within the stated density-specific intervals when $h_0$ is reconstructed from Eq.~\eqref{eq:nlm_grid_origin}. The regenerated archive stores the complete per-image sweep and selected value rather than a separate boundary-optimum flag; the co-located files \path{data/output/unifiedComparisonFinalV4/<dataset>/tolerance_<tau>/<level>/<image>/nlm_h_sweep.csv} provide the curves directly.
-\pt{Os 610 registros NLM V4 identificam calibração com referência completa na observação ruidosa atual. Todos os valores selecionados estão dentro dos intervalos declarados por densidade quando $h_0$ é reconstruído pela Eq.~\eqref{eq:nlm_grid_origin}. O arquivo regenerado armazena a varredura completa por imagem e o valor selecionado, em vez de uma marca separada de ótimo na borda; os arquivos localizados em \path{data/output/unifiedComparisonFinalV4/<dataset>/tolerance_<tau>/<level>/<image>/nlm_h_sweep.csv} fornecem diretamente as curvas.}
+The 610 NLM records identify full-reference calibration on the current noisy observation. All selected values lie within the stated density-specific intervals when $h_0$ is reconstructed from Eq.~\eqref{eq:nlm_grid_origin}. The regenerated archive stores the complete per-image sweep and selected value rather than a separate boundary-optimum flag; the co-located files \path{data/output/unifiedComparisonCanonical/<dataset>/tolerance_<tau>/<level>/<image>/nlm_h_sweep.csv} provide the curves directly.
+\pt{Os 610 registros NLM identificam calibração com referência completa na observação ruidosa atual. Todos os valores selecionados estão dentro dos intervalos declarados por densidade quando $h_0$ é reconstruído pela Eq.~\eqref{eq:nlm_grid_origin}. O arquivo regenerado armazena a varredura completa por imagem e o valor selecionado, em vez de uma marca separada de ótimo na borda; os arquivos localizados em \path{data/output/unifiedComparisonCanonical/<dataset>/tolerance_<tau>/<level>/<image>/nlm_h_sweep.csv} fornecem diretamente as curvas.}
 
-Each V4 NLM JSON record and its co-located \texttt{nlm\_h\_sweep.csv} share the dataset, tolerance, level, image identifier, and reference/noisy hashes recorded in \texttt{case.json}. For Set12 \texttt{08.png}, $p=0.03$, and $\tau=0$, the selected $h=147$ is strictly inside the recorded sweep $132,\ldots,292$. The fixed $h=1$ for IANLM and GHNLM is independent of this NLM calibration.
-\pt{Cada registro JSON de NLM V4 e seu \texttt{nlm\_h\_sweep.csv} localizado no mesmo diretório compartilham conjunto, tolerância, nível, identificador da imagem e hashes de referência/imagem ruidosa registrados em \texttt{case.json}. Para Set12 \texttt{08.png}, $p=0.03$ e $\tau=0$, o $h=147$ selecionado está estritamente dentro da varredura registrada $132,\ldots,292$. O $h=1$ fixo de IANLM e GHNLM é independente dessa calibração NLM.}
+Each NLM JSON record and its co-located \texttt{nlm\_h\_sweep.csv} share the dataset, tolerance, level, image identifier, and reference/noisy hashes recorded in \texttt{case.json}. For Set12 \texttt{08.png}, $p=0.03$, and $\tau=0$, the selected $h=147$ is strictly inside the recorded sweep $132,\ldots,292$. The fixed $h=1$ for IANLM and GHNLM is independent of this NLM calibration.
+\pt{Cada registro JSON de NLM e seu \texttt{nlm\_h\_sweep.csv} localizado no mesmo diretório compartilham conjunto, tolerância, nível, identificador da imagem e hashes de referência/imagem ruidosa registrados em \texttt{case.json}. Para Set12 \texttt{08.png}, $p=0.03$ e $\tau=0$, o $h=147$ selecionado está estritamente dentro da varredura registrada $132,\ldots,292$. O $h=1$ fixo de IANLM e GHNLM é independente dessa calibração NLM.}
 
 \subsection{Detector Tolerance and False Detections}
 \label{subsec:tau_sensitivity}
@@ -741,43 +1646,71 @@ The recorded counters are descriptive only: they do not separate an empty candid
 \section{Visual Quality Assessment}
 \label{subsec:visual_quality}
 
-Figures~\ref{fig:v4_set12_05_extreme_tau0} and \ref{fig:v4_set12_05_extreme_tau4} are paired V4 illustrations from Set12 image 05 at the fixed density $p=0.20$, shown separately for the two principal tolerances $\tau\in\{0,4\}$. Both reuse the documented historical crop coordinates $(x,y,w,h)=(295,265,150,150)$ rather than selecting a new region after observing V4 outputs. Each panel is generated directly from the reference, noisy input, and seven restored arrays in its archived case directory. The panels are illustrative only and are not used for parameter selection, a detector ablation, or an average visual ranking.
-\pt{As Figuras~\ref{fig:v4_set12_05_extreme_tau0} e \ref{fig:v4_set12_05_extreme_tau4} são ilustrações V4 emparelhadas da imagem 05 do Set12 na densidade fixa $p=0,20$, mostradas separadamente para as duas tolerâncias principais $\tau\in\{0,4\}$. Ambas reutilizam as coordenadas históricas documentadas do recorte $(x,y,w,h)=(295,265,150,150)$, em vez de selecionar uma nova região após observar as saídas V4. Cada painel é gerado diretamente da referência, da entrada ruidosa e dos sete arrays restaurados em seu diretório de caso arquivado. Os painéis são apenas ilustrativos e não são usados para seleção de parâmetros, ablação do detector ou ranking visual médio.}
+This section shows the corruption context and two matched grids of restored crops. The input figure marks the fixed inspection region; the following panels display all seven methods at $\tau=0$ and $\tau=4$. These examples illustrate one image condition and do not establish an average visual ranking.
+\pt{Esta seção apresenta o contexto da corrupção e duas grades correspondentes de recortes restaurados. A figura das entradas marca a região fixa de inspeção; os painéis seguintes mostram os sete métodos em $\tau=0$ e $\tau=4$. Esses exemplos ilustram uma condição de imagem e não estabelecem um ranking visual médio.}
+
+Figure~\ref{fig:set12_reference_noisy_crop_regions} identifies the fixed $150\times150$-pixel region in Set12 Butterfly image 05 at density $p=0.20$. The clean reference and the two noisy inputs use the same corruption mask; their impulse-value bands correspond to $b=\tau=0$ and $b=\tau=4$. Because the generation band and detector tolerance vary together, this visual display does not isolate a detector-only effect. The marked region was retained from the supplied reference before inspecting the restored outputs.
+\pt{A Figura~\ref{fig:set12_reference_noisy_crop_regions} identifica a região fixa de $150\times150$ pixels na imagem 05 Butterfly do Set12, com densidade $p=0.20$. A referência limpa e as duas entradas ruidosas usam a mesma máscara de corrupção; suas faixas de valores impulsivos correspondem a $b=\tau=0$ e $b=\tau=4$. Como a faixa de geração e a tolerância do detector variam conjuntamente, esta exibição visual não isola o efeito do detector. A região marcada foi mantida a partir da referência fornecida antes da inspeção das saídas restauradas.}
 
 \begin{figure}[!t]
 \centering
-\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau0/reference.png}
-\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau0/noisy.png}
-\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau0/nlm.png}\\[1mm]
-\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau0/gnlm.png}
-\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau0/ghnlm.png}
-\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau0/ianlm.png}\\[1mm]
-\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau0/median.png}
-\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau0/aswmf.png}
-\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau0/nlmedians.png}
-\caption{Paired V4 crop from Set12 image 05 under salt-and-pepper noise at extreme density ($p=0.20$) and $\tau=0$, with exact endpoint bands 0 and 255. To avoid overlaid method labels, the panel order is fixed as follows: rows reference/noisy/NLM; GNLM/GHNLM/IANLM; median/ASWMF/NLMedians. The panel is generated by \path{src/salt_experiments/unified_comparison/reports/generate_v4_visual_panel.py} from \path{data/output/unifiedComparisonFinalV4/set12/tolerance_0/extreme/05/}.}
-\label{fig:v4_set12_05_extreme_tau0}
-\pt{Recorte V4 emparelhado da imagem 05 do Set12 sob ruído sal-e-pimenta em densidade extrema ($p=0,20$) e $\tau=0$, com bandas de extremos exatos 0 e 255. Para evitar rótulos sobrepostos de métodos, a ordem do painel é fixa: linhas referência/ruidosa/NLM; GNLM/GHNLM/IANLM; mediana/ASWMF/NLMedians. O painel é gerado por \path{src/salt_experiments/unified_comparison/reports/generate_v4_visual_panel.py} a partir de \path{data/output/unifiedComparisonFinalV4/set12/tolerance_0/extreme/05/}.}
+\noindent\begin{minipage}[t]{0.48\columnwidth}
+\centering
+\includegraphics[width=\linewidth]{images/clean/set12_05_reference_with_crop_rectangle.png}\\
+% {\small Reference}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\columnwidth}
+\centering
+\includegraphics[width=\linewidth]{images/noisy/set12_t0/noisy_with_crop_rectangle.png}\\
+% {\small Noisy input, $\tau=0$}
+\end{minipage}
+\par\smallskip
+\noindent\makebox[\columnwidth][c]{%
+\begin{minipage}[t]{0.48\columnwidth}
+\centering
+\includegraphics[width=\linewidth]{images/noisy/set12_t4/noisy_with_crop_rectangle.png}\\
+% {\small Noisy input, $\tau=4$}
+\end{minipage}%
+}
+\caption{Reference and matched noisy inputs for Set12 Butterfly image 05 at density $p=0.20$. First row: clean reference and noisy input at $\tau=0$. Second row: noisy input at $\tau=4$. Green rectangles indicate the same fixed inspection region in all three images.}
+\label{fig:set12_reference_noisy_crop_regions}
+\pt{Referência e entradas ruidosas correspondentes para a imagem 05 Butterfly do Set12, com densidade $p=0.20$. Primeira linha: referência limpa e entrada ruidosa em $\tau=0$. Segunda linha: entrada ruidosa em $\tau=4$. Os retângulos verdes indicam a mesma região fixa de inspeção nas três imagens.}
+\end{figure}
+
+Figures~\ref{fig:set12_extreme_crop_tau0} and~\ref{fig:set12_extreme_crop_tau4} show the same fixed Butterfly region for the evaluated cases at $\tau=0$ and $\tau=4$, respectively. Each panel includes the reference, its corresponding noisy input, and outputs from all seven methods. The paired cases share the corruption mask, but their impulse-value bands differ; since the noise setting and detector tolerance change together, this display does not isolate a tolerance-only effect. These crops provide qualitative context for this image condition, not an average visual ranking.
+\pt{As Figuras~\ref{fig:set12_extreme_crop_tau0} e~\ref{fig:set12_extreme_crop_tau4} mostram a mesma região fixa da imagem Butterfly para os casos avaliados com $\tau=0$ e $\tau=4$, respectivamente. Cada painel inclui a referência, a entrada ruidosa correspondente e as saídas dos sete métodos. Os casos pareados compartilham a máscara de corrupção, mas diferem nas faixas de valores impulsivos; como a configuração do ruído e a tolerância do detector variam em conjunto, esta exibição não isola o efeito exclusivo da tolerância. Esses recortes fornecem contexto qualitativo para esta condição de imagem, não um ranking visual médio.}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/set12_05_extreme_tau0/reference.png}
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/set12_05_extreme_tau0/noisy.png}
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/set12_05_extreme_tau0/nlm.png}\\[1mm]
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/set12_05_extreme_tau0/gnlm.png}
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/set12_05_extreme_tau0/ghnlm.png}
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/set12_05_extreme_tau0/ianlm.png}\\[1mm]
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/set12_05_extreme_tau0/median.png}
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/set12_05_extreme_tau0/aswmf.png}
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/set12_05_extreme_tau0/nlmedians.png}
+\caption{Restoration crops for Set12 Butterfly image 05 at $p=0.20$ and $\tau=0$. Rows: reference, noisy input, and \nlm; GNLM, GHNLM, and \method; median filter, \aswmf, and \nlmedian.}
+\label{fig:set12_extreme_crop_tau0}
+\pt{Recortes de restauração da imagem 05 Butterfly do Set12, com $p=0{,}20$ e $\tau=0$. Linhas: referência, entrada ruidosa e \nlm; GNLM, GHNLM e \method; filtro de mediana, \aswmf e \nlmedian.}
 \end{figure}
 
 \begin{figure}[!t]
 \centering
-\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau4/reference.png}
-\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau4/noisy.png}
-\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau4/nlm.png}\\[1mm]
-\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau4/gnlm.png}
-\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau4/ghnlm.png}
-\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau4/ianlm.png}\\[1mm]
-\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau4/median.png}
-\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau4/aswmf.png}
-\includegraphics[width=0.31\columnwidth]{figures/v4/set12_05_extreme_tau4/nlmedians.png}
-\caption{Paired V4 crop from Set12 image 05 under salt-and-pepper noise at extreme density ($p=0.20$), $\tau=4$, and generation bands 0--4 and 251--255. To avoid overlaid method labels, the panel order is fixed as follows: rows reference/noisy/NLM; GNLM/GHNLM/IANLM; median/ASWMF/NLMedians. The panel is generated by \path{src/salt_experiments/unified_comparison/reports/generate_v4_visual_panel.py} from \path{data/output/unifiedComparisonFinalV4/set12/tolerance_4/extreme/05/}.}
-\label{fig:v4_set12_05_extreme_tau4}
-\pt{Recorte V4 emparelhado da imagem 05 do Set12 sob ruído sal-e-pimenta em densidade extrema ($p=0,20$), $\tau=4$ e faixas de geração 0--4 e 251--255. Para evitar rótulos sobrepostos de métodos, a ordem do painel é fixa: linhas referência/ruidosa/NLM; GNLM/GHNLM/IANLM; mediana/ASWMF/NLMedians. O painel é gerado por \path{src/salt_experiments/unified_comparison/reports/generate_v4_visual_panel.py} a partir de \path{data/output/unifiedComparisonFinalV4/set12/tolerance_4/extreme/05/}.}
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/set12_05_extreme_tau4/reference.png}
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/set12_05_extreme_tau4/noisy.png}
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/set12_05_extreme_tau4/nlm.png}\\[1mm]
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/set12_05_extreme_tau4/gnlm.png}
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/set12_05_extreme_tau4/ghnlm.png}
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/set12_05_extreme_tau4/ianlm.png}\\[1mm]
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/set12_05_extreme_tau4/median.png}
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/set12_05_extreme_tau4/aswmf.png}
+\includegraphics[width=0.31\columnwidth]{images/cropped/butterfly/set12_05_extreme_tau4/nlmedians.png}
+\caption{Restoration crops for Set12 Butterfly image 05 at $p=0.20$ and $\tau=4$. Rows: reference, noisy input, and \nlm; GNLM, GHNLM, and \method; median filter, \aswmf, and \nlmedian.}
+\label{fig:set12_extreme_crop_tau4}
+\pt{Recortes de restauração da imagem 05 Butterfly do Set12, com $p=0{,}20$ e $\tau=4$. Linhas: referência, entrada ruidosa e \nlm; GNLM, GHNLM e \method; filtro de mediana, \aswmf e \nlmedian.}
 \end{figure}
-
-The V4 GHNLM and IANLM panels are independently restored arrays and are visibly distinct in this paired case. This does not establish a general visual or causal advantage: quantitative conclusions continue to rely on the complete archived image-level records and the paired summaries in Section~\ref{subsec:ianlm_vs_ghnlm_results}.
-\pt{Os painéis V4 de GHNLM e IANLM são arrays restaurados independentemente e são visualmente distintos neste caso emparelhado. Isso não estabelece vantagem visual ou causal geral: as conclusões quantitativas continuam a se basear nos registros completos por imagem arquivados e nos resumos emparelhados da Seção~\ref{subsec:ianlm_vs_ghnlm_results}.}
 
 
 \section{Runtime Analysis}
@@ -786,13 +1719,29 @@ The V4 GHNLM and IANLM panels are independently restored arrays and are visibly 
 Table~\ref{tab:official_timing} reports the recorded filtering-call times, not end-to-end runtime. All rows specify $512\times512$ inputs, a CPU worker limit of 8, and a Numba thread limit of 8. The NLM backend is recorded as \texttt{NLM\_fast\_cuda\_global}; this field does not establish that other methods use CUDA. NLM calibration is separately recorded, with mean 6.902404 s and median 5.851295 s over 610 conditions. The table excludes this calibration cost and does not establish equivalent timing scopes or hardware-normalized speedups.
 \pt{A Tabela~\ref{tab:official_timing} apresenta os tempos registrados da chamada de filtragem, não o tempo ponta a ponta. Todas as linhas especificam entradas $512\times512$, limite de 8 processos CPU e limite de 8 threads Numba. O backend do NLM é registrado como \texttt{NLM\_fast\_cuda\_global}; esse campo não estabelece que outros métodos usem CUDA. A calibração NLM é registrada separadamente, com média de 6,902404 s e mediana de 5,851295 s nas 610 condições. A tabela exclui esse custo de calibração e não estabelece escopos de tempo equivalentes nem speedups normalizados por hardware.}
 
-\input{tables/runtime_results}
+\begin{table*}[!t]
+  \centering
+  \caption{Mean filtering-call time (s) in the canonical comparison, by dataset and tolerance. NLM calibration is excluded.}
+  \label{tab:official_timing}
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{llrrrrrrr}
+  \toprule
+  Dataset & $\tau$ & IANLM & GHNLM & GNLM & NLM & NLMedians & Median & ASWMF\\
+  \midrule
+  Set12 & 0 & 0.3049 & 179.4107 & 47.2969 & 0.0072 & 0.7260 & 0.0183 & 0.0249\\
+  Set12 & 4 & 0.3046 & 176.5622 & 47.2336 & 0.0073 & 0.6733 & 0.0181 & 0.0167\\
+  Set50 & 0 & 0.3106 & 173.2522 & 47.3963 & 0.0072 & 0.6530 & 0.0180 & 0.0195\\
+  Set50 & 4 & 0.3156 & 168.4639 & 49.7430 & 0.0067 & 0.6410 & 0.0181 & 0.0188\\
+  \bottomrule
+  \end{tabular}
+\end{table*}
 
 Calibration, compilation/warm-up, filtering, device transfers, process initialization, and metric evaluation must be timed separately or included identically in a stated end-to-end measurement. CPU/GPU synchronization, worker counts, thread limits, image sizes, and software versions must be recorded. Measurements from different worker configurations must not be pooled as if resources were fixed; asymptotic complexity does not substitute for these controls.
 \pt{Calibração, compilação/aquecimento, filtragem, transferências de dispositivo, inicialização de processos e avaliação de métricas precisam ser cronometradas separadamente ou incluídas de forma idêntica em uma medição ponta a ponta declarada. Sincronização CPU/GPU, número de processos, limites de threads, tamanhos de imagem e versões de software precisam ser registrados. Medições com números diferentes de processos não podem ser agrupadas como se os recursos fossem fixos; a complexidade assintótica não substitui esses controles.}
 
-Recorded timings measure the filtering call for each method; NLM calibration time is stored separately and is excluded from Table~\ref{tab:official_timing}. The canonical runner warms up the NLM and IANLM kernels before timed cases and synchronizes the CUDA stream before returning NLM output. The V4 runtime manifest, \path{data/output/unifiedComparisonFinalV4/runtime.json}, is associated with that table and records the CPU model and worker limit, GPU device and memory, CUDA runtime/driver and compute capability, Python, and numerical-library versions. It documents the measurement environment but does not turn these filtering-call times into end-to-end or hardware-normalized speedups.
-\pt{Os tempos registrados medem a chamada de filtragem de cada método; o tempo de calibração NLM é armazenado separadamente e é excluído da Tabela~\ref{tab:official_timing}. O executor canônico aquece os kernels NLM e IANLM antes dos casos cronometrados e sincroniza o stream CUDA antes de retornar a saída NLM. O manifesto de execução V4, \path{data/output/unifiedComparisonFinalV4/runtime.json}, está associado a essa tabela e registra o modelo de CPU e limite de processos, dispositivo e memória GPU, runtime/driver CUDA e capacidade de computação, Python e versões das bibliotecas numéricas. Ele documenta o ambiente de medição, mas não transforma esses tempos de chamada de filtragem em speedups ponta a ponta ou normalizados por hardware.}
+Recorded timings measure the filtering call for each method; NLM calibration time is stored separately and is excluded from Table~\ref{tab:official_timing}. The canonical runner warms up the NLM and IANLM kernels before timed cases and synchronizes the CUDA stream before returning NLM output. The runtime manifest, \path{data/output/unifiedComparisonCanonical/runtime.json}, is associated with that table and records the CPU model and worker limit, GPU device and memory, CUDA runtime/driver and compute capability, Python, and numerical-library versions. It documents the measurement environment but does not turn these filtering-call times into end-to-end or hardware-normalized speedups.
+\pt{Os tempos registrados medem a chamada de filtragem de cada método; o tempo de calibração NLM é armazenado separadamente e é excluído da Tabela~\ref{tab:official_timing}. O executor canônico aquece os kernels NLM e IANLM antes dos casos cronometrados e sincroniza o stream CUDA antes de retornar a saída NLM. O manifesto de execução, \path{data/output/unifiedComparisonCanonical/runtime.json}, está associado a essa tabela e registra o modelo de CPU e limite de processos, dispositivo e memória GPU, runtime/driver CUDA e capacidade de computação, Python e versões das bibliotecas numéricas. Ele documenta o ambiente de medição, mas não transforma esses tempos de chamada de filtragem em speedups ponta a ponta ou normalizados por hardware.}
 
 
 \section{Limitations}
@@ -816,8 +1765,8 @@ A small absolute $h$ can suppress most patch weights numerically, making fallbac
 This work formulates IANLM as an impulse-aware non-local restoration framework combining selective switching, candidate rejection, patch similarity, spatial weighting, and local fallback. Its configurable detector generalizes the strict endpoint rule to near-extreme bands while preserving pixels classified as reliable. The cases $\tau=0$ and $\tau=4$ correspond to exact endpoints and the bands 0--4 and 251--255, respectively; larger tolerances require caution because valid image intensities can also lie in the detected bands.
 \pt{Este trabalho formula o IANLM como uma estrutura de restauração não local orientada a impulsos que combina chaveamento seletivo, rejeição de candidatos, similaridade entre patches, ponderação espacial e fallback local. Seu detector configurável generaliza a regra estrita dos extremos para faixas próximas deles, preservando pixels classificados como confiáveis. Os casos $\tau=0$ e $\tau=4$ correspondem aos extremos exatos e às faixas 0--4 e 251--255, respectivamente; tolerâncias maiores exigem cautela porque intensidades válidas da imagem também podem estar nas faixas detectadas.}
 
-The version-4 comparison contains 4,270 outputs over 610 conditions for seven methods. IANLM has higher PSNR and SSIM than GHNLM in all matched conditions; mean PSNR differences range from 3.4204 to 4.1148 dB across the four dataset--tolerance groups. The strongest external baseline in dataset-level mean PSNR and SSIM changes from ASWMF at $\tau=0$ to median filtering at $\tau=4$. These findings support the complete impulse-aware procedure in the evaluated synthetic settings, not a universal ranking or an isolated benefit of non-local aggregation.
-\pt{A comparação de versão 4 contém 4.270 saídas em 610 condições para sete métodos. O IANLM apresenta PSNR e SSIM maiores que o GHNLM em todas as condições correspondentes; as diferenças médias de PSNR variam de 3,4204 a 4,1148 dB nos quatro grupos de conjunto e tolerância. O baseline externo mais forte em PSNR e SSIM médios por conjunto muda de ASWMF em $\tau=0$ para filtro de mediana em $\tau=4$. Esses achados sustentam o procedimento completo orientado a impulsos nas configurações sintéticas avaliadas, não um ranking universal nem um benefício isolado da agregação não local.}
+The final experimental comparison contains 4,270 outputs over 610 conditions for seven methods. IANLM has higher PSNR and SSIM than GHNLM in all matched conditions; mean PSNR differences range from 3.4204 to 4.1148 dB across the four dataset--tolerance groups. The strongest external baseline in dataset-level mean PSNR and SSIM changes from ASWMF at $\tau=0$ to median filtering at $\tau=4$. These findings support the complete impulse-aware procedure in the evaluated synthetic settings, not a universal ranking or an isolated benefit of non-local aggregation.
+\pt{A comparação experimental final contém 4.270 saídas em 610 condições para sete métodos. O IANLM apresenta PSNR e SSIM maiores que o GHNLM em todas as condições correspondentes; as diferenças médias de PSNR variam de 3,4204 a 4,1148 dB nos quatro grupos de conjunto e tolerância. O baseline externo mais forte em PSNR e SSIM médios por conjunto muda de ASWMF em $\tau=0$ para filtro de mediana em $\tau=4$. Esses achados sustentam o procedimento completo orientado a impulsos nas configurações sintéticas avaliadas, não um ranking universal nem um benefício isolado da agregação não local.}
 
 Further work should isolate the substantial fallback contribution, verify the ASWMF tolerance response, resolve the calibration boundary flag, and benchmark timing scopes consistently. The shared image content between datasets and full-reference baseline calibration must be considered when assessing generalization. The public implementation and container environment already support reuse and reproduction; packaging a standalone library and evaluating broader noise models remain future work.
 \pt{Trabalhos adicionais devem isolar a contribuição substancial do fallback, verificar a resposta do ASWMF à tolerância, esclarecer a marcação de borda da calibração e medir tempos com escopos consistentes. O conteúdo de imagem compartilhado entre conjuntos e a calibração dos baselines com referência completa devem ser considerados ao avaliar generalização. A implementação pública e o ambiente em contêiner já permitem reutilização e reprodução; empacotar uma biblioteca independente e avaliar modelos de ruído mais amplos permanecem como trabalhos futuros.}

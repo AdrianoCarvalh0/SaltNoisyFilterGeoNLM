@@ -1,7 +1,7 @@
-# Curvas por imagem — arquivo V4
+# Curvas por imagem — arquivo canônico
 
 Este diretório contém 80 gráficos vetoriais em PDF, derivados de
-`../../results_partial.csv` e do protocolo V4 (`../../protocol.json`). Há 40
+`../../results_partial.csv` e do protocolo canônico (`../../protocol.json`). Há 40
 PDFs para cada conjunto (`set12/` e `set50/`): cinco densidades de ruído
 impulsivo, duas tolerâncias principais (`tau0` e `tau4`), e as métricas PSNR e
 SSIM nas duas formas de apresentação abaixo.
@@ -19,6 +19,6 @@ de imagens; a legenda usa posicionamento automático. IANLM é mostrado em
 vermelho para destaque.
 
 Os arquivos são produzidos por
-`src/salt_experiments/unified_comparison/reports/generate_v4_result_curves.py`.
+`src/salt_experiments/unified_comparison/reports/generate_canonical_result_curves.py`.
 O `manifest.json` registra a revisão, a hash da árvore-fonte e a lista completa
 dos PDFs gerados.

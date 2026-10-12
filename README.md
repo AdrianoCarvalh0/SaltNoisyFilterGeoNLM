@@ -138,10 +138,10 @@ SaltAndPepper/
 Earlier per-level experiments, exploratory parameter studies, notebooks, plots,
 and their historical outputs live in [`legacy/`](legacy/). They are retained for
 provenance only and are not interchangeable with the canonical protocol. The
-article cites the canonical runner and the validated version-4 records in
-`data/output/unifiedComparisonFinalV4/`; use `unified_comparison/` for a new run.
+article cites the canonical runner and the validated records in
+`data/output/unifiedComparisonCanonical/`; use `unified_comparison/` for a new run.
 The earlier `unifiedComparisonFinal/` archive is retained unchanged for
-provenance and must not be mixed with V4 results.
+provenance and must not be mixed with canonical results.
 
 ---
 
@@ -217,7 +217,7 @@ They store only protocols, calibration curves, and tabular results below
 `data/output/studies/ablations/`; they never replace the official archive.
 
 The Set12-medium NLMedians grid study selects `(f, t) = (2, 2)` as the fixed
-V4 baseline by the PSNR/runtime compromise. It does not claim universal
+canonical baseline by the PSNR/runtime compromise. It does not claim universal
 optimality or use Set50 for configuration selection.
 
 To inspect the GNLM structural setting `(f, t, k) = (1, 3, 7)`, run the small
@@ -262,7 +262,7 @@ Your run writes everything to **`data/output/unifiedComparison/`**:
 
 ### Headline findings (mean score)
 
-- **IANLM leads GHNLM** in PSNR and SSIM in every matched V4 condition. The
+- **IANLM leads GHNLM** in PSNR and SSIM in every matched condition. The
   recorded filtering-call times are configuration-specific; GHNLM is much slower.
 - **ASWMF** is the fastest overall and solid at tolerance `0`, but **collapses at
   tolerance `4`** (it depends on impulses sitting at exact 0/255).

@@ -1,4 +1,4 @@
-"""Generate V4 grouped-bar summaries for PSNR and SSIM.
+"""Generate canonical grouped-bar summaries for PSNR and SSIM.
 
 Each chart aggregates the per-image results by density for one dataset and
 detector tolerance.  The presentation deliberately has no title or y-axis
@@ -17,7 +17,7 @@ import pandas as pd
 
 
 ROOT = Path(__file__).resolve().parents[4]
-ARCHIVE = ROOT / 'data/output/unifiedComparisonFinalV4'
+ARCHIVE = ROOT / 'data/output/unifiedComparisonCanonical'
 OUTPUT = ARCHIVE / 'reports/summary_bars'
 METHODS = (
     ('nlm', 'NLM', '#15b9d1', 's'),
