@@ -1,9 +1,0 @@
-# Legacy V3 result archive — do not cite as final
-
-This directory contains the former protocol-version-3 archive. Its
-`summary_partial.csv` and `results_partial.csv` are retained only for
-provenance and comparison with the superseded run.
-
-The sole final result source for the manuscript is the validated canonical
-archive at `data/output/unifiedComparisonCanonical/`. Do not combine records or
-aggregates from this directory with canonical results.
