@@ -1,0 +1,20 @@
+{
+  "dataset": "set12",
+  "tolerance": 0,
+  "level": "medium",
+  "file_name": "08",
+  "method": "ghnlm_matched_switching",
+  "source_case": "data/output/unifiedComparisonCanonical/set12/tolerance_0/medium/08",
+  "source_reference_sha256": "2c394996c73fe787fca843f9f42014d5330dda4ad3053466b934f2c52d1c1f84",
+  "source_noisy_sha256": "8e3d7b1e875d19f22c64e3044a9d0c41b820f9cfa02088458ff600eaf223eb5f",
+  "f": 1,
+  "t": 3,
+  "k": 7,
+  "h": 1.0,
+  "target_switching": "detected_only",
+  "graph_candidate_policy": "admissible_centers_plus_target_source",
+  "psnr": 42.67338490494771,
+  "ssim": 0.9943555762518878,
+  "score": 71.05447126506824,
+  "time_filter_call_s": 10.465803137998591
+}

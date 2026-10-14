@@ -1,0 +1,12 @@
+{
+  "base_archive": "data/output/unifiedComparisonCanonical",
+  "corrected_ghnlm_archive": "data/output/unifiedComparisonGHNLMMatchedSwitchingV1",
+  "output_archive": "data/output/unifiedComparisonCanonicalV5_GHNLMMatched",
+  "hard_linked_content": "all unchanged archived files and six non-GHNLM method outputs",
+  "replaced_ghnlm_cases": 610,
+  "stale_reports_removed": true,
+  "aggregate_csvs_rebuilt": [
+    "results_partial.csv",
+    "summary_partial.csv"
+  ]
+}

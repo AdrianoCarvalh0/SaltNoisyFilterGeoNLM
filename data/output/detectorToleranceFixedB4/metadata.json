@@ -1,0 +1,31 @@
+{
+  "study": "fixed_b_detector_tolerance_sensitivity",
+  "generation_width_b": 4,
+  "detector_tolerances": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "noise_cases": 305,
+  "detector_evaluations": 1525,
+  "clean_control_images": 61,
+  "clean_control_evaluations": 305,
+  "zero_denominator_policy": "undefined rates are encoded as null in JSON and blank in CSV",
+  "rates": {
+    "precision": "TP / (TP + FP)",
+    "recall": "TP / (TP + FN)",
+    "false_positive_rate": "FP / (FP + TN)",
+    "false_discovery_rate": "FP / (TP + FP)"
+  },
+  "source_archives": {
+    "set12": "legacy/data/output/set12ImpulseTolerance",
+    "set50": "legacy/data/output/set50ImpulseToleranceH1"
+  },
+  "notes": [
+    "No restoration algorithm is invoked.",
+    "Detector summaries provide unweighted means of image-level rates and separately pooled-count rates.",
+    "Clean controls use an empty ground-truth impulse mask; precision and recall are therefore undefined."
+  ]
+}

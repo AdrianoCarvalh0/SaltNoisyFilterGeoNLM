@@ -17,7 +17,7 @@ import pandas as pd
 
 
 ROOT = Path(__file__).resolve().parents[4]
-ARCHIVE = ROOT / 'data/output/unifiedComparisonCanonical'
+ARCHIVE = ROOT / 'data/output/unifiedComparisonCanonicalV5_GHNLMMatched'
 OUTPUT = ARCHIVE / 'reports/summary_bars'
 METHODS = (
     ('nlm', 'NLM', '#15b9d1', 's'),

@@ -94,6 +94,7 @@ def process_pixel_geonlm_medians(
     aswmf_weight_diag_2=1.0,
     aswmf_weight_other=10.0,
     impulse_tolerance=0,
+    exclude_impulse_nodes_from_graph=False,
 ):
     im = i + padding
     jn = j + padding
@@ -115,8 +116,6 @@ def process_pixel_geonlm_medians(
 
     n_patches = (rmax - rmin) * (smax - smin)
     patch_size = (2 * f + 1) ** 2
-    n_neighbors = min(nn, max(1, n_patches - 1))
-
     dataset = np.empty((n_patches, patch_size), dtype=np.float32)
     pixels_search = np.empty(n_patches, dtype=np.float32)
     valid_candidates = np.ones(n_patches, dtype=bool)
@@ -155,15 +154,36 @@ def process_pixel_geonlm_medians(
     if source == -1:
         source = 0
 
+    # The historical implementation built the graph from all search-window
+    # patches and masked rejected centers only after shortest paths were
+    # computed.  The matched-switching study can instead omit rejected
+    # candidate vertices from graph construction.  The target remains a source
+    # vertex even when it is itself an impulse, as it does in direct IANLM.
+    graph_points = np.arange(n_patches, dtype=np.int64)
+    if exclude_impulse_nodes_from_graph:
+        graph_points = np.flatnonzero(valid_candidates).astype(np.int64)
+        if not np.any(graph_points == source):
+            graph_points = np.concatenate((np.array([source], dtype=np.int64), graph_points))
+    if graph_points.size <= 1:
+        return _aswmf_local_fallback(
+            img_n, im, jn, radius=f,
+            weight_diag_1=aswmf_weight_diag_1,
+            weight_diag_2=aswmf_weight_diag_2,
+            weight_other=aswmf_weight_other,
+            impulse_tolerance=impulse_tolerance,
+        )
+    source_graph = int(np.flatnonzero(graph_points == source)[0])
+    n_neighbors = min(nn, graph_points.size - 1)
+
     knn_graph = sknn.kneighbors_graph(
-        dataset,
+        dataset[graph_points],
         n_neighbors=n_neighbors,
         mode="distance",
     )
     graph = nx.from_scipy_sparse_array(knn_graph)
-    lengths, _ = nx.single_source_dijkstra(graph, source)
+    lengths, _ = nx.single_source_dijkstra(graph, source_graph)
 
-    points = list(lengths.keys())
+    points = graph_points[np.asarray(list(lengths.keys()), dtype=np.int64)]
     distances = np.array(list(lengths.values()), dtype=np.float32)
     similarity_weights = np.exp(-(distances ** 2) / (h ** 2))
     pixels = pixels_search[points]
@@ -252,6 +272,7 @@ def Parallel_Switch_GEONLMedians(
     n_jobs=-1,
     impulse_tolerance=0,
     padding=None,
+    exclude_impulse_nodes_from_graph=False,
 ):
     padding = f + t if padding is None else padding
     m = img_n.shape[0] - 2 * padding
@@ -288,6 +309,7 @@ def Parallel_Switch_GEONLMedians(
             aswmf_weight_diag_2,
             aswmf_weight_other,
             impulse_tolerance,
+            exclude_impulse_nodes_from_graph,
         )
         for i, j in impulse_coords
     )
@@ -316,6 +338,7 @@ def run_geonlm_medians_pipeline(
     aswmf_weight_other=10.0,
     n_jobs=-1,
     impulse_tolerance=0,
+    exclude_impulse_nodes_from_graph=False,
 ):
     padding = f + t
     img_noisy_mirror = mirror_cpu(img_noisy.astype(np.float32), padding)
@@ -338,6 +361,7 @@ def run_geonlm_medians_pipeline(
             n_jobs=n_jobs,
             impulse_tolerance=impulse_tolerance,
             padding=padding,
+            exclude_impulse_nodes_from_graph=exclude_impulse_nodes_from_graph,
         )
     else:
         img_filtered = Parallel_GEONLMedians(

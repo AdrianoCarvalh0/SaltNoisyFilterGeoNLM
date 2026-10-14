@@ -1,0 +1,16 @@
+[
+  {
+    "operation": "derived_archive_ghnlm_replacement",
+    "base_archive": "data/output/unifiedComparisonCanonical",
+    "corrected_ghnlm_archive": "data/output/unifiedComparisonGHNLMMatchedSwitchingV1",
+    "replaced_ghnlm_cases": 610,
+    "preserved_methods": [
+      "nlm",
+      "ianlm",
+      "median",
+      "aswmf",
+      "nlmedians",
+      "gnlm"
+    ]
+  }
+]

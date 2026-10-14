@@ -1,0 +1,20 @@
+{
+  "dataset": "set50",
+  "tolerance": 4,
+  "level": "extreme",
+  "file_name": "20",
+  "method": "ghnlm_matched_switching",
+  "source_case": "data/output/unifiedComparisonCanonical/set50/tolerance_4/extreme/20",
+  "source_reference_sha256": "c3a4da195ffc62103521cd979723e50840fe46cfd989b567c826985f8b23dcf4",
+  "source_noisy_sha256": "9e5d4f20f677f2041ca8390a14e6e168991f0f4a13167ae732211aaefe2c18a6",
+  "f": 1,
+  "t": 3,
+  "k": 7,
+  "h": 1.0,
+  "target_switching": "detected_only",
+  "graph_candidate_policy": "admissible_centers_plus_target_source",
+  "psnr": 33.869714735177595,
+  "ssim": 0.9612838890566207,
+  "score": 64.99905182041982,
+  "time_filter_call_s": 36.32378621499811
+}

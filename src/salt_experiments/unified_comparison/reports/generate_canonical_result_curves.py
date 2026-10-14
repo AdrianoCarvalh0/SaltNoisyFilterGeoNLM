@@ -20,7 +20,7 @@ import pandas as pd
 
 
 ROOT = Path(__file__).resolve().parents[4]
-ARCHIVE = ROOT / 'data/output/unifiedComparisonCanonical'
+ARCHIVE = ROOT / 'data/output/unifiedComparisonCanonicalV5_GHNLMMatched'
 OUTPUT = ARCHIVE / 'reports/per_image_curves'
 METHODS = (
     ('nlm', 'NLM', '#15b9d1', 's'),

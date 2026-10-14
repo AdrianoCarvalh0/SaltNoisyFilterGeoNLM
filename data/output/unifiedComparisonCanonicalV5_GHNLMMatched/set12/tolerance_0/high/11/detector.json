@@ -1,0 +1,8 @@
+{
+  "precision": 0.5697148817802503,
+  "recall": 1.0,
+  "true_positives": 26216,
+  "detected_pixels": 46016,
+  "assigned_impulses": 26216,
+  "false_positives": 19800
+}

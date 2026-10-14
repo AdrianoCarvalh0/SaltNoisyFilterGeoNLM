@@ -34,7 +34,7 @@ def load(path: Path) -> Image.Image:
 
 def render_noisy_with_crop_rectangle(tolerance: int) -> Path:
     """Mark the documented crop directly on the archived noisy array."""
-    case = ROOT / f'data/output/unifiedComparisonCanonical/set12/tolerance_{tolerance}/extreme/05'
+    case = ROOT / f'data/output/unifiedComparisonCanonicalV5_GHNLMMatched/set12/tolerance_{tolerance}/extreme/05'
     output_dir = ROOT / f'figures/canonical/set12_05_extreme_tau{tolerance}'
     noisy = np.load(case / 'noisy.npy')
     image = Image.fromarray(noisy.astype(np.uint8), mode='L').convert('RGB')
@@ -49,7 +49,7 @@ def render_noisy_with_crop_rectangle(tolerance: int) -> Path:
 
 
 def render_tolerance(tolerance: int) -> None:
-    case = ROOT / f'data/output/unifiedComparisonCanonical/set12/tolerance_{tolerance}/extreme/05'
+    case = ROOT / f'data/output/unifiedComparisonCanonicalV5_GHNLMMatched/set12/tolerance_{tolerance}/extreme/05'
     output_dir = ROOT / f'figures/canonical/set12_05_extreme_tau{tolerance}'
     panels = (
         ('reference.png', ROOT / 'data/input/set12/05.png'),
